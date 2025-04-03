@@ -12,6 +12,7 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/repository/analyze"
 	"github.com/webscopeio/ai-hackathon/internal/repository/generate"
+	"github.com/webscopeio/ai-hackathon/internal/repository/validate"
 )
 
 var (
@@ -59,10 +60,18 @@ var generateCmd = &cobra.Command{
 		}
 		logger.Debug("Created temporary directory at: %s", tempDir)
 
-		// Store each test file in the temporary directory
-		logger.Debug("Writing %d test files to temporary directory", len(response.TestFiles))
+		// Create a tests directory within the temporary directory
+		testsDir := filepath.Join(tempDir, "tests")
+		if err := os.MkdirAll(testsDir, 0755); err != nil {
+			fmt.Printf("Error creating tests directory: %v\n", err)
+			return
+		}
+		logger.Debug("Created tests directory at: %s", testsDir)
+
+		// Store each test file in the tests directory
+		logger.Debug("Writing %d test files to tests directory", len(response.TestFiles))
 		for i, testFile := range response.TestFiles {
-			filePath := filepath.Join(tempDir, testFile.Filename)
+			filePath := filepath.Join(testsDir, testFile.Filename)
 			logger.Debug("Writing test file %d: %s (content length: %d)", i+1, filePath, len(testFile.Content))
 			if err := os.WriteFile(filePath, []byte(testFile.Content), 0644); err != nil {
 				fmt.Printf("Error writing test file %s: %v\n", testFile.Filename, err)
@@ -73,11 +82,21 @@ var generateCmd = &cobra.Command{
 			logger.Debug("Successfully wrote test file: %s", filePath)
 		}
 
+		// TODO: we need to do somethign with the dependencies
 		fmt.Printf("Successfully generated %d test files in directory: %s\n", len(response.TestFiles), tempDir)
 		fmt.Println("Dependencies:")
 		for _, dep := range response.Dependencies {
 			fmt.Printf("  - %s\n", dep)
 		}
+
+		output, err := validate.Validate(tempDir)
+		if err != nil {
+			fmt.Printf("Error validating tests: %v\n", err)
+		fmt.Printf("Validation output: %s\n", output)
+			return
+		}
+		fmt.Printf("Validation output: %s\n", output)
+
 	},
 }
 

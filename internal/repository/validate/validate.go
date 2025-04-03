@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 )
 
-func Validate(tempDir string) error {
+func Validate(tempDir string) ([]byte, error) {
 	// Get the absolute path to the src directory
 	currentDir, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Error getting current directory: %v\n", err)
-		return err
+		return nil, err
 	}
 	
-	templatePath := filepath.Join(currentDir, "nodeTemplate")
+	templatePath := filepath.Join(currentDir, "internal/repository/validate/nodeTemplate")
 	
 	// Files to copy
 	filesToCopy := []string{"tsconfig.json", "pnpm-lock.yaml", "package.json", "playwright.config.ts"}
@@ -29,20 +29,20 @@ func Validate(tempDir string) error {
 		src, err := os.Open(srcFile)
 		if err != nil {
 			fmt.Printf("Error opening source file %s: %v\n", file, err)
-			return err
+			return nil, err
 		}
 		defer src.Close()
 		
 		dst, err := os.Create(dstFile)
 		if err != nil {
 			fmt.Printf("Error creating destination file %s: %v\n", file, err)
-			return err
+			return nil, err
 		}
 		defer dst.Close()
 		
 		if _, err = io.Copy(dst, src); err != nil {
 			fmt.Printf("Error copying file %s: %v\n", file, err)
-			return err
+			return nil, err
 		}
 	}
 	
@@ -55,7 +55,7 @@ func Validate(tempDir string) error {
 		fmt.Printf("❌ Installation failed!\n")
 		fmt.Printf("Error executing pnpm install: %v\n", err)
 		fmt.Printf("Installation output: %s\n", output)
-		return err
+		return output,err
 	}
 	fmt.Printf("✅ Installation completed successfully!\n")
 	
@@ -68,10 +68,10 @@ func Validate(tempDir string) error {
 		fmt.Printf("❌ Tests failed!\n")
 		fmt.Printf("Error executing pnpm test: %v\n", err)
 		fmt.Printf("Test output: %s\n", output)
-		return err
+		return output,err
 	}
 	
 	fmt.Printf("✅ Tests passed successfully!\n")
 	fmt.Printf("Test output: %s\n", output)
-	return nil
+	return output,nil
 }
