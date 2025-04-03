@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/iamhectorsosa/ai-hackathon/internal/llm"
-	"github.com/iamhectorsosa/ai-hackathon/internal/models"
+	"github.com/webscopeio/ai-hackathon/internal/llm"
+	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
 func CreateJob(client *llm.Client) http.HandlerFunc {

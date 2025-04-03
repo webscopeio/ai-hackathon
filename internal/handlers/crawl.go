@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/iamhectorsosa/ai-hackathon/internal/crawler"
-	"github.com/iamhectorsosa/ai-hackathon/internal/models"
+	"github.com/webscopeio/ai-hackathon/internal/crawler"
+	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
 func Crawl(w http.ResponseWriter, r *http.Request) {

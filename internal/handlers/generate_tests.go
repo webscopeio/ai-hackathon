@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/iamhectorsosa/ai-hackathon/internal/crawler"
-	"github.com/iamhectorsosa/ai-hackathon/internal/llm"
-	"github.com/iamhectorsosa/ai-hackathon/internal/models"
+	"github.com/webscopeio/ai-hackathon/internal/crawler"
+	"github.com/webscopeio/ai-hackathon/internal/llm"
+	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
 func GenerateTests(client *llm.Client) http.HandlerFunc {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	"github.com/iamhectorsosa/ai-hackathon/internal/config"
-	"github.com/iamhectorsosa/ai-hackathon/internal/llm"
-	"github.com/iamhectorsosa/ai-hackathon/internal/router"
+	"github.com/webscopeio/ai-hackathon/internal/config"
+	"github.com/webscopeio/ai-hackathon/internal/llm"
+	"github.com/webscopeio/ai-hackathon/internal/router"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/iamhectorsosa/ai-hackathon/internal/models"
+	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
 func Status(w http.ResponseWriter, r *http.Request) {

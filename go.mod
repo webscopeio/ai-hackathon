@@ -1,4 +1,4 @@
-module github.com/iamhectorsosa/ai-hackathon
+module github.com/webscopeio/ai-hackathon
 
 go 1.24.0
 

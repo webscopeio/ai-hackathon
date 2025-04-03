@@ -3,7 +3,7 @@ package llm
 import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
-	"github.com/iamhectorsosa/ai-hackathon/internal/config"
+	"github.com/webscopeio/ai-hackathon/internal/config"
 )
 
 type Client struct {
