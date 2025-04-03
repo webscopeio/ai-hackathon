@@ -96,6 +96,19 @@ func (r *GenerateTestsReturn) Validate() error {
 	return nil
 }
 
+type AnalysisReturn struct {
+	Analysis string            `json:"analysis" jsonschema_description:"Analysis of the website and potential test cases"`
+	Links    []string          `json:"links" jsonschema_description:"List of URLs that were crawled"`
+	Results  map[string]string `json:"results" jsonschema_description:"Map of URLs to their HTML content"`
+}
+
+func (r *AnalysisReturn) Validate() error {
+	if r.Analysis == "" {
+		return fmt.Errorf("required field: analysis")
+	}
+	return nil
+}
+
 type ErrorReturn struct {
 	Error string `json:"error"`
 }
