@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -20,7 +22,22 @@ func Load() *Config {
 		APIKey:      "",
 	}
 
-	envMap, err := godotenv.Read()
+	workDir, _ := os.Getwd()
+	rootDir := workDir
+
+	for {
+		if _, err := os.Stat(filepath.Join(rootDir, "go.mod")); err == nil {
+			break
+		}
+		parent := filepath.Dir(rootDir)
+		if parent == rootDir {
+			rootDir = workDir
+			break
+		}
+		rootDir = parent
+	}
+
+	envMap, err := godotenv.Read(filepath.Join(rootDir, ".env"))
 	if err != nil {
 		log.Println("No .env file found, using default configuration")
 		return cfg
