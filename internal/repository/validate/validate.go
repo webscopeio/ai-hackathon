@@ -13,12 +13,12 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.Analysis, error) {
+func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.TestRunAnalysis, error) {
 	// Get the absolute path to the src directory
 	currentDir, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Error getting current directory: %v\n", err)
-		return models.Analysis{}, err
+		return models.TestRunAnalysis{}, err
 	}
 	
 	templatePath := filepath.Join(currentDir, "internal/repository/validate/nodeTemplate")
@@ -34,20 +34,20 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.A
 		src, err := os.Open(srcFile)
 		if err != nil {
 			fmt.Printf("Error opening source file %s: %v\n", file, err)
-			return models.Analysis{}, err
+			return models.TestRunAnalysis{}, err
 		}
 		defer src.Close()
 		
 		dst, err := os.Create(dstFile)
 		if err != nil {
 			fmt.Printf("Error creating destination file %s: %v\n", file, err)
-			return models.Analysis{}, err
+			return models.TestRunAnalysis{}, err
 		}
 		defer dst.Close()
 		
 		if _, err = io.Copy(dst, src); err != nil {
 			fmt.Printf("Error copying file %s: %v\n", file, err)
-			return models.Analysis{}, err
+			return models.TestRunAnalysis{}, err
 		}
 	}
 	
@@ -60,7 +60,7 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.A
 		fmt.Printf("❌ Installation failed!\n")
 		fmt.Printf("Error executing pnpm install: %v\n", err)
 		fmt.Printf("Installation output: %s\n", output)
-		return models.Analysis{}, err
+		return models.TestRunAnalysis{}, err
 	}
 	fmt.Printf("✅ Installation completed successfully!\n")
 	
@@ -78,7 +78,7 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.A
 		analysis, analyzeErr := analyzeOutput(ctx, client, output)
 		if analyzeErr != nil {
 			fmt.Printf("Error analyzing test output: %v\n", analyzeErr)
-			return models.Analysis{}, fmt.Errorf("test execution failed and output analysis failed: %w", analyzeErr)
+			return models.TestRunAnalysis{}, fmt.Errorf("test execution failed and output analysis failed: %w", analyzeErr)
 		}
 		return analysis, nil
 	}
@@ -91,8 +91,8 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.A
 }
 
 
-func analyzeOutput(ctx context.Context, client *llm.Client, output []byte) (models.Analysis, error) {
-	analysis := models.Analysis{}
+func analyzeOutput(ctx context.Context, client *llm.Client, output []byte) (models.TestRunAnalysis, error) {
+	analysis := models.TestRunAnalysis{}
 
 	// Create a prompt for the LLM to analyze the test output
 	prompt := `Please analyze the following Playwright test output and extract information about any test failures.
@@ -108,7 +108,7 @@ Test output:
 ` + string(output)
 
 	// Create a tool for structured response
-	tool, toolChoice := llm.GenerateTool[models.Analysis]("get_test_analysis", "Analyze Playwright test output and return structured information about test failures")
+	tool, toolChoice := llm.GenerateTool[models.TestRunAnalysis]("get_test_analysis", "Analyze Playwright test output and return structured information about test failures")
 
 	// Get structured completion from LLM
 	rawResponse, err := client.GetStructuredCompletion(

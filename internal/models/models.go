@@ -41,7 +41,7 @@ type Failure struct {
 	Error    string `json:"error" jsonschema_description:"Error message or reason for failure"`
 }
 
-type Analysis struct {
+type TestRunAnalysis struct {
 	Failures []Failure `json:"failures" jsonschema_description:"Array of test failures"`
 }
 

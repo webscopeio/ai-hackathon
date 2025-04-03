@@ -43,27 +43,32 @@ func (c *Client) GetStructuredCompletion(
 	tool *anthropic.ToolParam,
 	toolChoice *anthropic.ToolChoiceToolParam,
 ) ([]byte, error) {
+	systemBlocks := []anthropic.TextBlockParam{
+		{
+			Type: "text",
+			Text: c.systemPrompt,
+		},
+		{
+			Type: "text",
+			Text: "In this environment you have access to a set of tools you can use to answer the user's request. You should use JSON format. Specifications are available in JSONSchema format.",
+		},
+	}
+
+	if context != "" {
+		systemBlocks = append(systemBlocks, anthropic.TextBlockParam{
+			Type: "text",
+			Text: context,
+			CacheControl: anthropic.CacheControlEphemeralParam{
+				Type: "ephemeral",
+			},
+		})
+	}
+
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model: anthropic.ModelClaude3_5SonnetLatest,
 		// INFO: tools typically require more tokens
 		MaxTokens: 2400,
-		System: []anthropic.TextBlockParam{
-			{
-				Type: "text",
-				Text: c.systemPrompt,
-			},
-			{
-				Type: "text",
-				Text: "In this environment you have access to a set of tools you can use to answer the user's request. You should use JSON format. Specifications are available in JSONSchema format.",
-			},
-			{
-				Type: "text",
-				Text: context,
-				CacheControl: anthropic.CacheControlEphemeralParam{
-					Type: "ephemeral",
-				},
-			},
-		},
+		System:    systemBlocks,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 		},
