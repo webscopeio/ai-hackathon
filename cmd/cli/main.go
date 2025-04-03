@@ -89,13 +89,21 @@ var generateCmd = &cobra.Command{
 			fmt.Printf("  - %s\n", dep)
 		}
 
-		output, err := validate.Validate(tempDir)
+		analysis, err := validate.Validate(context.Background(), client, tempDir)
 		if err != nil {
 			fmt.Printf("Error validating tests: %v\n", err)
-		fmt.Printf("Validation output: %s\n", output)
 			return
 		}
-		fmt.Printf("Validation output: %s\n", output)
+		
+		// Print validation results
+		if len(analysis.Failures) > 0 {
+			fmt.Printf("❌ Test validation found %d failures:\n", len(analysis.Failures))
+			for _, failure := range analysis.Failures {
+				fmt.Printf("File: %s\nError: %s\n\n", failure.Filename, failure.Error)
+			}
+		} else {
+			fmt.Printf("✅ All tests passed validation successfully!\n")
+		}
 
 	},
 }

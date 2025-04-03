@@ -36,6 +36,15 @@ type TestFile struct {
 	FilePath string `json:"-" jsonschema_description:"Absolute path to the temporary file where the test content is stored"`
 }
 
+type Failure struct {
+	Filename string `json:"filename" jsonschema_description:"Name of the test file where the failure occurred"`
+	Error    string `json:"error" jsonschema_description:"Error message or reason for failure"`
+}
+
+type Analysis struct {
+	Failures []Failure `json:"failures" jsonschema_description:"Array of test failures"`
+}
+
 func (r *GenerateTestsReturn) Validate() error {
 	var missingFields []string
 	val := reflect.ValueOf(*r)
