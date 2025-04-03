@@ -26,7 +26,7 @@ func GenerateTests(client *llm.Client) http.HandlerFunc {
 			return
 		}
 
-		response, err := generate.Tests(r.Context(), client, args.Url)
+		response, err := generate.GenerateTests(r.Context(), client, args.Url)
 		if err != nil {
 			encode(w, http.StatusInternalServerError, models.ErrorReturn{
 				Error: fmt.Sprintf("Error generating tests: %v", err),

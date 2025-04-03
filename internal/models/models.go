@@ -33,6 +33,7 @@ type GenerateTestsReturn struct {
 type TestFile struct {
 	Filename string `json:"filename" jsonschema_description:"Name of the test file (e.g., 'login.spec.ts')"`
 	Content  string `json:"content" jsonschema_description:"Complete content of the test file"`
+	FilePath string `json:"-" jsonschema_description:"Absolute path to the temporary file where the test content is stored"`
 }
 
 func (r *GenerateTestsReturn) Validate() error {
