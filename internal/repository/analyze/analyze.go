@@ -2,6 +2,7 @@ package analyze
 
 import "fmt"
 
-func Analyze() {
+func Analyze() error {
 	fmt.Println("Hello from Analyze")
+	return nil
 }
