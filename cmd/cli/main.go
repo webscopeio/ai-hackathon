@@ -52,12 +52,12 @@ var generateCmd = &cobra.Command{
 		}
 
 		// Create a temporary directory to store the test files
-		logger.Debug("Creating temporary directory for test files")
 		tempDir, err := os.MkdirTemp("", "playwright-tests-")
 		if err != nil {
 			fmt.Printf("Error creating temporary directory: %v\n", err)
 			return
 		}
+		defer os.RemoveAll(tempDir)
 		logger.Debug("Created temporary directory at: %s", tempDir)
 
 		// Create a tests directory within the temporary directory
