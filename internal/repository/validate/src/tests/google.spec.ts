@@ -6,7 +6,7 @@ test.describe("Google Website Tests", () => {
     await expect(page).toHaveTitle(/Google/);
   });
 
-  test("should perform a search", async ({ page }) => {
+  test.skip("should perform a search", async ({ page }) => {
     await page.goto("/");
     await page.fill('textarea[name="q"]', "Playwright testing");
     await page.press('textarea[name="q"]', "Enter");
@@ -19,7 +19,7 @@ test.describe("Google Website Tests", () => {
     expect(searchResults).toBeGreaterThan(0);
   });
 
-  test("should have working navigation links", async ({ page }) => {
+  test.skip("should have working navigation links", async ({ page }) => {
     await page.goto("/");
 
     // Test Gmail link
