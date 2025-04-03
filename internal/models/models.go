@@ -41,8 +41,10 @@ type Failure struct {
 	Error    string `json:"error" jsonschema_description:"Error message or reason for failure"`
 }
 
-type TestRunAnalysis struct {
-	Failures []Failure `json:"failures" jsonschema_description:"Array of test failures"`
+type AnalyzerReturn struct {
+	TechSpec string `json:"techSpec" jsonschema_description:"Technical specification of the website"`
+	SiteMap  map[string]string `json:"siteMap" jsonschema_description:"Map of URLs to their HTML content"`
+	Criteria string `json:"criteria" jsonschema_description:"Criteria for the test files. Detailed scenario for a test suite (file)"`
 }
 
 func (r *GenerateTestsReturn) Validate() error {
