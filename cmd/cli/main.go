@@ -10,23 +10,17 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
-	"github.com/webscopeio/ai-hackathon/internal/repository/analyze"
 	"github.com/webscopeio/ai-hackathon/internal/repository/generate"
 	"github.com/webscopeio/ai-hackathon/internal/repository/validate"
 )
 
-var (
-	url string
-)
+var url string
 
 var rootCmd = &cobra.Command{
 	Use:   "testbuddy",
 	Short: "TestBuddy CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := analyze.Analyze()
-		if err != nil {
-			fmt.Println(err)
-		}
+		cmd.Help()
 	},
 }
 
@@ -52,12 +46,12 @@ var generateCmd = &cobra.Command{
 		}
 
 		// Create a temporary directory to store the test files
-		logger.Debug("Creating temporary directory for test files")
 		tempDir, err := os.MkdirTemp("", "playwright-tests-")
 		if err != nil {
 			fmt.Printf("Error creating temporary directory: %v\n", err)
 			return
 		}
+		defer os.RemoveAll(tempDir)
 		logger.Debug("Created temporary directory at: %s", tempDir)
 
 		// Create a tests directory within the temporary directory
@@ -94,7 +88,7 @@ var generateCmd = &cobra.Command{
 			fmt.Printf("Error validating tests: %v\n", err)
 			return
 		}
-		
+
 		// Print validation results
 		if len(analysis.Failures) > 0 {
 			fmt.Printf("❌ Test validation found %d failures:\n", len(analysis.Failures))
@@ -104,7 +98,6 @@ var generateCmd = &cobra.Command{
 		} else {
 			fmt.Printf("✅ All tests passed validation successfully!\n")
 		}
-
 	},
 }
 

@@ -11,7 +11,7 @@ import (
 func (c *Client) GetCompletion(ctx context.Context, prompt string) (string, error) {
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.ModelClaude3_5HaikuLatest,
-		MaxTokens: 10,
+		MaxTokens: 4096,
 		System: []anthropic.TextBlockParam{
 			{
 				Type: "text",

@@ -20,37 +20,37 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.T
 		fmt.Printf("Error getting current directory: %v\n", err)
 		return models.TestRunAnalysis{}, err
 	}
-	
+
 	templatePath := filepath.Join(currentDir, "internal/repository/validate/nodeTemplate")
-	
+
 	// Files to copy
 	filesToCopy := []string{"tsconfig.json", "pnpm-lock.yaml", "package.json", "playwright.config.ts"}
-	
+
 	// Copy each file from template to temp directory
 	for _, file := range filesToCopy {
 		srcFile := filepath.Join(templatePath, file)
 		dstFile := filepath.Join(tempDir, file)
-		
+
 		src, err := os.Open(srcFile)
 		if err != nil {
 			fmt.Printf("Error opening source file %s: %v\n", file, err)
 			return models.TestRunAnalysis{}, err
 		}
 		defer src.Close()
-		
+
 		dst, err := os.Create(dstFile)
 		if err != nil {
 			fmt.Printf("Error creating destination file %s: %v\n", file, err)
 			return models.TestRunAnalysis{}, err
 		}
 		defer dst.Close()
-		
+
 		if _, err = io.Copy(dst, src); err != nil {
 			fmt.Printf("Error copying file %s: %v\n", file, err)
 			return models.TestRunAnalysis{}, err
 		}
 	}
-	
+
 	// Run pnpm install
 	installCmd := exec.Command("pnpm", "i")
 	installCmd.Dir = tempDir
@@ -63,7 +63,20 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.T
 		return models.TestRunAnalysis{}, err
 	}
 	fmt.Printf("✅ Installation completed successfully!\n")
-	
+
+	// Install browsers
+	playwrightCmd := exec.Command("npx", "playwright", "install")
+	playwrightCmd.Dir = tempDir
+	fmt.Printf("Running npx playwright install in %s...\n", tempDir)
+	output, err = playwrightCmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("❌ Installation failed!\n")
+		fmt.Printf("Error executing npx playwright install: %v\n", err)
+		fmt.Printf("Installation output: %s\n", output)
+		return models.TestRunAnalysis{}, err
+	}
+	fmt.Printf("✅ Installation completed successfully!\n")
+
 	// Run pnpm test
 	testCmd := exec.Command("pnpm", "test")
 	testCmd.Dir = tempDir
@@ -73,7 +86,7 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.T
 		fmt.Printf("❌ Tests failed!\n")
 		fmt.Printf("Error executing pnpm test: %v\n", err)
 		fmt.Printf("Test output: %s\n", output)
-		
+
 		// Even though tests failed, we want to analyze the output
 		analysis, analyzeErr := analyzeOutput(ctx, client, output)
 		if analyzeErr != nil {
@@ -82,14 +95,13 @@ func Validate(ctx context.Context, client *llm.Client, tempDir string) (models.T
 		}
 		return analysis, nil
 	}
-	
+
 	fmt.Printf("✅ Tests passed successfully!\n")
 	fmt.Printf("Test output: %s\n", output)
-	
+
 	// Even for successful runs, analyze the output to catch any warnings or informational messages
 	return analyzeOutput(ctx, client, output)
 }
-
 
 func analyzeOutput(ctx context.Context, client *llm.Client, output []byte) (models.TestRunAnalysis, error) {
 	analysis := models.TestRunAnalysis{}
@@ -113,7 +125,7 @@ Test output:
 	// Get structured completion from LLM
 	rawResponse, err := client.GetStructuredCompletion(
 		ctx,
-		"",  // No additional context needed
+		"", // No additional context needed
 		prompt,
 		tool,
 		toolChoice,
@@ -129,4 +141,3 @@ Test output:
 
 	return analysis, nil
 }
-
