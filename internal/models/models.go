@@ -41,10 +41,14 @@ type Failure struct {
 	Error    string `json:"error" jsonschema_description:"Error message or reason for failure"`
 }
 
+type AnalyzerToolExample struct {
+	Greeting string `json:"greeting" jsonschema_description:"This is just a friendly greeting"`
+}
+
 type AnalyzerReturn struct {
-	TechSpec string `json:"techSpec" jsonschema_description:"Technical specification of the website"`
-	SiteMap  map[string]string `json:"siteMap" jsonschema_description:"Map of URLs to their HTML content"`
-	Criteria string `json:"criteria" jsonschema_description:"Criteria for the test files. Detailed scenario for a test suite (file)"`
+	TechSpec string            `json:"techSpec"`
+	SiteMap  map[string]string `json:"siteMap"`
+	Criteria string            `json:"criteria"`
 }
 
 func (r *GenerateTestsReturn) Validate() error {
