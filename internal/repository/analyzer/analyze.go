@@ -38,7 +38,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
-			Model:     anthropic.ModelClaude3_5HaikuLatest,
+			Model:     anthropic.ModelClaude3_5SonnetLatest,
 			MaxTokens: 1024,
 			Messages:  messages,
 			Tools:     tools,

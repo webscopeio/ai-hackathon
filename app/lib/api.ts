@@ -10,18 +10,20 @@ export const api = {
     queryKey: ["getConfig"],
     queryFn: () => fetchGet<ConfigReturn>("config"),
   }),
+  analyze: (args: AnalyzeArgs) =>
+    fetchPost<AnalyzeArgs, AnalyzeReturn>("analyze", args),
 };
 
 export const useUpdateConfig = () => {
   return useMutation({
-    mutationFn: (config: Partial<ConfigData>) => 
+    mutationFn: (config: Partial<ConfigData>) =>
       fetchPost<Partial<ConfigData>, ConfigUpdateReturn>("config", config),
   });
 };
 
 export const useGenerateTests = () => {
   return useMutation({
-    mutationFn: (config: ConfigData) => 
+    mutationFn: (config: ConfigData) =>
       fetchPost<ConfigData, GenerateTestsReturn>("generate-tests", config),
   });
 };
@@ -48,6 +50,17 @@ export type ConfigReturn = ConfigData;
 export type ConfigUpdateReturn = {
   success: boolean;
   config: ConfigData;
+};
+
+export type AnalyzeArgs = {
+  url: string;
+  prompt: string;
+};
+
+export type AnalyzeReturn = {
+  techSpec: string;
+  siteMap: Record<string, string>;
+  criteria: string;
 };
 
 export type ErrorReturn = {
