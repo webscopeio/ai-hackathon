@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
-	"github.com/webscopeio/ai-hackathon/internal/logger"
-	"github.com/webscopeio/ai-hackathon/internal/repository/generate"
-	"github.com/webscopeio/ai-hackathon/internal/repository/validate"
+	"github.com/webscopeio/ai-hackathon/internal/models"
+	"github.com/webscopeio/ai-hackathon/internal/repository/gen_eval_loop"
 )
 
 var url string
@@ -28,81 +25,38 @@ var generateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate Playwright tests for a website",
 	Run: func(cmd *cobra.Command, args []string) {
-		if url == "" {
-			fmt.Println("Error: URL is required")
-			return
-		}
 
 		// Initialize config and LLM client
 		cfg := config.Load()
 		client := llm.New(cfg)
 
-		// Generate tests
-		logger.Debug("Generating tests for URL: %s", url)
-		response, err := generate.GenerateTests(context.Background(), client, url)
+		analysis := models.AnalyzerReturn{
+			TechSpec: "A simple one site website that should serve as an example of a website",
+			SiteMap: map[string]string{
+				"https://example.com": `<body><div><h1>Example Domain</h1><p>This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.</p><p><a href="https://www.iana.org/domains/example">More information...</a></p></div></body>`,
+			},
+			Criteria: "Test Criteria:\n1. Verify that the main heading displays 'Example Domain'\n2. Check if the informational paragraph about domain usage is present\n3. Ensure the 'More information' link points to iana.org and is clickable\n4. Validate that all text content is properly rendered",
+		}
+
+		filename, err := gen_eval_loop.GenEvalLoop(cmd.Context(), client, &analysis)
 		if err != nil {
-			fmt.Printf("Error generating tests: %v\n", err)
+			fmt.Printf("Error: %v\n", err)
 			return
 		}
 
-		// Create a temporary directory to store the test files
-		tempDir, err := os.MkdirTemp("", "playwright-tests-")
+		fmt.Printf("Generated test file: %s\n", filename)
+		// copy the file to the current directory
+		err = os.Rename(filename, "./generate.spec.ts")
 		if err != nil {
-			fmt.Printf("Error creating temporary directory: %v\n", err)
+			fmt.Printf("Error copying file: %v\n", err)
 			return
 		}
-		defer os.RemoveAll(tempDir)
-		logger.Debug("Created temporary directory at: %s", tempDir)
-
-		// Create a tests directory within the temporary directory
-		testsDir := filepath.Join(tempDir, "tests")
-		if err := os.MkdirAll(testsDir, 0755); err != nil {
-			fmt.Printf("Error creating tests directory: %v\n", err)
-			return
-		}
-		logger.Debug("Created tests directory at: %s", testsDir)
-
-		// Store each test file in the tests directory
-		logger.Debug("Writing %d test files to tests directory", len(response.TestFiles))
-		for i, testFile := range response.TestFiles {
-			filePath := filepath.Join(testsDir, testFile.Filename)
-			logger.Debug("Writing test file %d: %s (content length: %d)", i+1, filePath, len(testFile.Content))
-			if err := os.WriteFile(filePath, []byte(testFile.Content), 0644); err != nil {
-				fmt.Printf("Error writing test file %s: %v\n", testFile.Filename, err)
-				return
-			}
-			// Update the file path in the response
-			response.TestFiles[i].FilePath = filePath
-			logger.Debug("Successfully wrote test file: %s", filePath)
-		}
-
-		// TODO: we need to do somethign with the dependencies
-		fmt.Printf("Successfully generated %d test files in directory: %s\n", len(response.TestFiles), tempDir)
-		fmt.Println("Dependencies:")
-		for _, dep := range response.Dependencies {
-			fmt.Printf("  - %s\n", dep)
-		}
-
-		analysis, err := validate.Validate(context.Background(), client, tempDir)
-		if err != nil {
-			fmt.Printf("Error validating tests: %v\n", err)
-			return
-		}
-
-		// Print validation results
-		if len(analysis.Failures) > 0 {
-			fmt.Printf("❌ Test validation found %d failures:\n", len(analysis.Failures))
-			for _, failure := range analysis.Failures {
-				fmt.Printf("File: %s\nError: %s\n\n", failure.Filename, failure.Error)
-			}
-		} else {
-			fmt.Printf("✅ All tests passed validation successfully!\n")
-		}
+		fmt.Printf("Copied test file to current directory: %s\n", "./__generated__")
 	},
 }
 
 func init() {
-	generateCmd.Flags().StringVarP(&url, "url", "u", "", "URL of the website to generate tests for")
+	generateCmd.Flags()
 	rootCmd.AddCommand(generateCmd)
 }
 

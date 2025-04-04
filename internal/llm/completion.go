@@ -42,6 +42,7 @@ func (c *Client) GetStructuredCompletion(
 	prompt string,
 	tool *anthropic.ToolParam,
 	toolChoice *anthropic.ToolChoiceToolParam,
+	prevMessages []anthropic.MessageParam,
 ) ([]byte, error) {
 	systemBlocks := []anthropic.TextBlockParam{
 		{
@@ -64,14 +65,14 @@ func (c *Client) GetStructuredCompletion(
 		})
 	}
 
+	messages := append(prevMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)))
+
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model: anthropic.ModelClaude3_5SonnetLatest,
 		// INFO: tools typically require more tokens
 		MaxTokens: 2400,
 		System:    systemBlocks,
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
-		},
+		Messages:  messages,
 		Tools: []anthropic.ToolUnionParam{
 			{
 				OfTool: tool,
