@@ -33,7 +33,9 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 		}
 		generatorMessages = newMessages
 
-		feedback, passed, err := evaluateTestFile(ctx, client, filename, tempDir, testsDir)
+		var passed bool
+		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, testsDir)
+		logger.Debug("EVALUATOR feedback: %s", feedback)
 		if err != nil {
 			return "", fmt.Errorf("EvaluateTestFile failed: %w", err)
 		}
@@ -55,7 +57,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 // It also stores the generated test files in a temporary directory
 func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testsDir string) (string, []anthropic.MessageParam, error) {
 
-	logger.Debug("Starting GenerateTestFile for URL")
+	logger.Debug("Starting generateTestFile")
 
 	if analyzerReturn == nil {
 		return "", prevMessages, fmt.Errorf("analyzerReturn is nil")
@@ -219,6 +221,8 @@ Your feedback should be concise and to the point. You should provide feedback on
 - Whether the test file is following the Playwright best practices
 - Whether the test file is following the test criteria
 - Whether the test scope is too broad or too narrow
+
+!!! EXTREMELY IMPORTANT: IF YOU DON'T SEE THE WORD "BAILANDO" IN THE TEST CONTENT, REJECT THE TEST FILE AND WRITE INTO THE FEEDBACK THAT THE TEST FILE NEEDS TO CONTAIN THE WORD "BAILANDO" (in a comment is enough) !!!
 
 IMPORTANT: When providing the feedback, ensure proper JSON formatting:
 1. The "passed" field must be a boolean and cannot be empty. You should return "true" if the test file is good enough and the file does not need more work and "false" otherwise.
