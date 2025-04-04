@@ -10,16 +10,18 @@ import (
 )
 
 type Config struct {
-	Port        string
-	Environment string
-	APIKey      string
+	Port            string
+	Environment     string
+	APIKey          string
+	SentryAuthToken string
 }
 
 func Load() *Config {
 	cfg := &Config{
-		Port:        "8080",
-		Environment: "development",
-		APIKey:      "",
+		Port:            "8080",
+		Environment:     "development",
+		APIKey:          "",
+		SentryAuthToken: "",
 	}
 
 	workDir, _ := os.Getwd()
@@ -53,6 +55,10 @@ func Load() *Config {
 
 	if apiKey := envMap["API_KEY"]; strings.TrimSpace(apiKey) != "" {
 		cfg.APIKey = apiKey
+	}
+
+	if sentryAuthToken := envMap["SENTRY_AUTH_TOKEN"]; strings.TrimSpace(sentryAuthToken) != "" {
+		cfg.SentryAuthToken = sentryAuthToken
 	}
 
 	return cfg

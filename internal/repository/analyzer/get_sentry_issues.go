@@ -277,32 +277,32 @@ func GetSentryIssueTagValuesSorted(authToken, orgSlug, issueID, tagKey string) (
 // The paths are sorted by occurrence count (most frequent first)
 func GetAffectedSentryPaths(authToken, orgSlug, projectSlug string) ([]SentryAffectedPath, error) {
 	logger.Debug("Getting affected URL paths from Sentry for organization: %s, project: %s", orgSlug, projectSlug)
-	
+
 	// First get the issues
 	issues, err := GetSentryIssues(authToken, orgSlug, projectSlug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issues: %w", err)
 	}
-	
+
 	logger.Debug("Retrieved %d issues, now fetching URL tag details for each", len(issues))
 	if len(issues) == 0 {
 		logger.Debug("No issues found to fetch URL paths for")
 		return []SentryAffectedPath{}, nil
 	}
-	
+
 	// Limit to first 20 issues or less
 	maxIssues := 20
 	if len(issues) < maxIssues {
 		maxIssues = len(issues)
 	}
-	
+
 	// Map to aggregate URL paths and their counts across all issues
 	pathCountMap := make(map[string]int)
-	
+
 	// For each issue, get URL tag details
 	for i, issue := range issues[:maxIssues] {
 		logger.Debug("Processing issue %d/%d: ID=%s, ShortID=%s", i+1, maxIssues, issue.ID, issue.ShortID)
-		
+
 		// Get URL tag details for this issue
 		tagDetails, err := GetSentryIssueTagDetails(authToken, orgSlug, issue.ID, "url")
 		if err != nil {
@@ -310,15 +310,15 @@ func GetAffectedSentryPaths(authToken, orgSlug, projectSlug string) ([]SentryAff
 			// Continue with the next issue even if this one fails
 			continue
 		}
-		
+
 		logger.Debug("Retrieved %d URL values for issue %s", len(tagDetails.TopValues), issue.ID)
-		
+
 		// Add the URL values to our aggregate map
 		for _, value := range tagDetails.TopValues {
 			pathCountMap[value.Value] += value.Count
 		}
 	}
-	
+
 	// Convert the map to a slice for sorting
 	affectedPaths := make([]SentryAffectedPath, 0, len(pathCountMap))
 	for path, count := range pathCountMap {
@@ -327,13 +327,13 @@ func GetAffectedSentryPaths(authToken, orgSlug, projectSlug string) ([]SentryAff
 			Count: count,
 		})
 	}
-	
+
 	// Sort the paths by count in descending order
 	sort.Slice(affectedPaths, func(i, j int) bool {
 		return affectedPaths[i].Count > affectedPaths[j].Count
 	})
-	
-	logger.Debug("Retrieved and aggregated %d affected URL paths across %d issues", 
+
+	logger.Debug("Retrieved and aggregated %d affected URL paths across %d issues",
 		len(affectedPaths), maxIssues)
 	return affectedPaths, nil
 }

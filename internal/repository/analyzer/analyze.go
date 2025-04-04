@@ -15,7 +15,6 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 		anthropic.NewUserMessage(anthropic.NewTextBlock(fmt.Sprintf("The website is: %s - %s", urlStr, prompt))),
 	}
 
-	// Call this more for more tools
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
 	getContentTool, _ := llm.GenerateTool[models.GetContentTool]("get_content_tool", "This tool is able to get the body content for a list of important URLs")
 
@@ -40,8 +39,6 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 			return nil, err
 		}
 
-		fmt.Println("new message is ready for processing")
-
 		// This is a debugging block
 		for _, block := range message.Content {
 			switch block := block.AsAny().(type) {
@@ -53,10 +50,7 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 			}
 		}
 
-		// I have no IDEA what is .ToParam
 		messages = append(messages, message.ToParam())
-
-		fmt.Println("These are the params", message.ToParam())
 
 		toolResults := []anthropic.ContentBlockParamUnion{}
 		for _, block := range message.Content {
@@ -65,7 +59,6 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 				var response any
 				switch block.Name {
 				case sitemapTool.Name:
-					fmt.Println("The Sitemap tool is engaged")
 					input := models.SitemapTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
 					if err != nil {
@@ -77,7 +70,6 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 						return nil, err
 					}
 				case getContentTool.Name:
-					fmt.Println("The Content Tool is engaged")
 					input := models.GetContentTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
 					if err != nil {
@@ -90,30 +82,20 @@ func Analyze(ctx context.Context, client *llm.Client, urlStr string, prompt stri
 					}
 				}
 
-				fmt.Println("Marshalling response for", block.Name)
 				b, err := json.Marshal(response)
-				fmt.Printf("Message size: %d bytes\n", len(b))
-
 				if err != nil {
 					return nil, err
 				}
 
-				fmt.Println("Successfuly marshalled for", block.Name)
-
 				toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, string(b), false))
-
-				fmt.Println("Ready tools results for next iteration")
 			}
 		}
 
 		if len(toolResults) == 0 {
-			fmt.Println("Breaking no results")
 			break
 		}
 
 		messages = append(messages, anthropic.NewUserMessage(toolResults...))
-
-		fmt.Println("Ready messages for next iteration")
 
 	}
 	return nil, nil

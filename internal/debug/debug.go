@@ -11,7 +11,7 @@ import (
 // Debug prints a debug message if debug mode is enabled
 // Debug mode is enabled if the DEBUG_MODE environment variable is set to "true"
 // or if it's defined as DEBUG_MODE=true in a .env file in the current directory
-func Debug(format string, args ...interface{}) {
+func Debug(format string, args ...any) {
 	// Check if debug mode is enabled
 	if isDebugModeEnabled() {
 		log.Printf("[DEBUG] "+format, args...)

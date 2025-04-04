@@ -14,14 +14,19 @@ func TestGetSentryIssues(t *testing.T) {
 	}
 
 	// Load Sentry auth token from environment variables
-	authToken := config.LoadSentryAuthToken()
+	cfg := config.Load()
+
+	// Skip test if Sentry auth token is not configured
+	if cfg.SentryAuthToken == "" {
+		t.Skip("Skipping test as Sentry auth token is not configured in .env file")
+	}
 
 	// Replace with your actual Sentry credentials
 	orgSlug := "webscopeio-pb"
 	projectSlug := "ai-hackathon-demo"
 
 	// Call the function with real credentials
-	issues, err := GetSentryIssues(authToken, orgSlug, projectSlug)
+	issues, err := GetSentryIssues(cfg.SentryAuthToken, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting Sentry issues: %v", err)
@@ -49,7 +54,12 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 	}
 
 	// Load Sentry auth token from environment variables
-	authToken := config.LoadSentryAuthToken()
+	cfg := config.Load()
+
+	// Skip test if Sentry auth token is not configured
+	if cfg.SentryAuthToken == "" {
+		t.Skip("Skipping test as Sentry auth token is not configured in .env file")
+	}
 
 	// Replace with your actual Sentry credentials
 	orgSlug := "webscopeio-pb"
@@ -59,7 +69,7 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 	tagKey := "url"
 
 	// Call the function to get issues
-	issues, err := GetSentryIssues(authToken, orgSlug, projectSlug)
+	issues, err := GetSentryIssues(cfg.SentryAuthToken, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting Sentry issues: %v", err)
@@ -80,7 +90,7 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 		t.Logf("\nIssue %d/%d: %s - %s", i+1, maxIssues, issue.ShortID, issue.Title)
 
 		// Get details for the tag
-		tagDetails, err := GetSentryIssueTagDetails(authToken, orgSlug, issue.ID, tagKey)
+		tagDetails, err := GetSentryIssueTagDetails(cfg.SentryAuthToken, orgSlug, issue.ID, tagKey)
 		if err != nil {
 			t.Logf("  Error getting tag details for %s: %v", tagKey, err)
 			continue
@@ -107,10 +117,10 @@ func TestGetSentryIssueTagValuesSorted(t *testing.T) {
 	}
 
 	// Load Sentry auth token from environment variables
-	authToken := config.LoadSentryAuthToken()
+	cfg := config.Load()
 
 	// Skip test if Sentry auth token is not configured
-	if authToken == "" {
+	if cfg.SentryAuthToken == "" {
 		t.Skip("Skipping test as Sentry auth token is not configured in .env file")
 	}
 
@@ -124,7 +134,7 @@ func TestGetSentryIssueTagValuesSorted(t *testing.T) {
 	tagKey := "url"
 
 	// Call the function with real credentials
-	sortedValues, err := GetSentryIssueTagValuesSorted(authToken, orgSlug, issueID, tagKey)
+	sortedValues, err := GetSentryIssueTagValuesSorted(cfg.SentryAuthToken, orgSlug, issueID, tagKey)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials, issue ID, and tag key to pass")
 		t.Logf("Error getting sorted tag values: %v", err)
@@ -159,10 +169,10 @@ func TestGetAffectedSentryPaths(t *testing.T) {
 	}
 
 	// Load Sentry auth token from environment variables
-	authToken := config.LoadSentryAuthToken()
+	cfg := config.Load()
 
 	// Skip test if Sentry auth token is not configured
-	if authToken == "" {
+	if cfg.SentryAuthToken == "" {
 		t.Skip("Skipping test as Sentry auth token is not configured in .env file")
 	}
 
@@ -171,7 +181,7 @@ func TestGetAffectedSentryPaths(t *testing.T) {
 	projectSlug := "ai-hackathon-demo"
 
 	// Call the function with real credentials
-	affectedPaths, err := GetAffectedSentryPaths(authToken, orgSlug, projectSlug)
+	affectedPaths, err := GetAffectedSentryPaths(cfg.SentryAuthToken, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting affected Sentry paths: %v", err)
