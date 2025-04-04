@@ -29,7 +29,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	loopCount := 0
 
 	for {
-		if loopCount > 3 {
+		if loopCount > 3 && false {
 			return "", fmt.Errorf("Exceeded maximum number of loops")
 		}
 		filename, newMessages, err := generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir)
