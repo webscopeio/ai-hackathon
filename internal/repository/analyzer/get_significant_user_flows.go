@@ -1,4 +1,4 @@
-package analyze
+package analyzer
 
 import (
 	"context"
@@ -112,13 +112,13 @@ func getSessionPageViews(ctx context.Context, cfg *config.Config, apiKey, sessio
 	now := time.Now()
 	// Get data for the last 90 days
 	startDate := now.AddDate(0, 0, -90)
-	
+
 	startAtValue := fmt.Sprintf("%d", startDate.Unix()*1000)
 	endAtValue := fmt.Sprintf("%d", now.Unix()*1000)
 	logger.Debug("Using startAt=%s (%s) and endAt=%s (%s) for session activity",
 		startAtValue, startDate.Format(time.RFC3339),
 		endAtValue, now.Format(time.RFC3339))
-	
+
 	query := url.Values{}
 	query.Add("startAt", startAtValue)
 	query.Add("endAt", endAtValue)
