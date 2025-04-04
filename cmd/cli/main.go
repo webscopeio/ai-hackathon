@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -80,14 +81,16 @@ IMPORTANT: The critera must be a list of criteria always separated by 2 newlines
 				return
 			}
 
-			fmt.Printf("Generated test file: %s\n", filename)
+			fmt.Printf("Generated test file: %s\n", filepath.Base(filename))
+
 			// copy the file to the current directory
-			err = os.Rename(filename, "./__generated__")
+			destPath := filepath.Join("./__generated__", filepath.Base(filename))
+			err = os.Rename(filename, destPath)
 			if err != nil {
 				fmt.Printf("Error copying file: %v\n", err)
 				return
 			}
-			fmt.Printf("Copied test file to current directory: %s\n", "./__generated__")
+			fmt.Printf("Copied test file to current directory: %s\n", destPath)
 		}
 
 		return

@@ -50,8 +50,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 			break
 		}
 
-		testPath := filepath.Join(testsDir, filename)
-		testFileContent, err = os.ReadFile(testPath)
+		testFileContent, err = os.ReadFile(filename)
 		if err != nil {
 			return "", fmt.Errorf("ReadTestFile failed: %w", err)
 		}
@@ -196,14 +195,13 @@ TEST FILE CURRENT CONTENT:
 
 func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, testsDir string) (string, bool, error) {
 	// List the provided test file
-	filePath := filepath.Join(testsDir, filename)
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return "", false, fmt.Errorf("couldn't read test file: %w", err)
 	}
 
 	// Run pnpm test
-	testCmd := exec.Command("pnpm", "test", filePath)
+	testCmd := exec.Command("pnpm", "test", filename)
 	testCmd.Dir = tempDir
 	fmt.Printf("Running tests in %s...\n", tempDir)
 	output, err := testCmd.CombinedOutput()

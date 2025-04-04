@@ -8,6 +8,7 @@ test-results
 # User configuration
 user_config.yaml
 internal/config/user_config.yaml
-__generated__
+__generated__/*
+!__generated__/.gitkeep
 .DS_Store
 .DS_Store
