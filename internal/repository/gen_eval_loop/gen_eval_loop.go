@@ -29,14 +29,13 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	loopCount := 0
 
 	for {
-		if loopCount > 3 && false {
+		if loopCount > 5 {
 			return "", fmt.Errorf("Exceeded maximum number of loops")
 		}
-		filename, newMessages, err := generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir)
+		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
-		generatorMessages = newMessages
 		logger.Debug("Filename: %s", filename)
 
 		var passed bool
@@ -61,9 +60,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 		loopCount++
 	}
 
-	filePath := filepath.Join(testsDir, filename)
-
-	return filePath, nil
+	return filename, nil
 }
 
 // Tests generates test files based on a URL using the LLM client
@@ -194,7 +191,7 @@ TEST FILE CURRENT CONTENT:
 	}
 
 	logger.Debug("GenerateTest completed successfully")
-	return response.FileName, newMessages, nil
+	return filePath, newMessages, nil
 }
 
 func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, testsDir string) (string, bool, error) {
