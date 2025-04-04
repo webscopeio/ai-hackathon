@@ -13,7 +13,7 @@ func TestGetContent(t *testing.T) {
 
 	urls := []string{
 		"jakub.kr",
-		"jakub.kr/components/cards",
+		"https://ai-hackathon-demo-delta.vercel.app/",
 	}
 
 	res, err := GetContent(ctx, urls)
