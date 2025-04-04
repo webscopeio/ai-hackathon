@@ -14,4 +14,8 @@ func RegisterRoutes(r *chi.Mux, llm *llm.Client) {
 	r.Get("/status", handlers.Status)
 
 	r.Post("/crawl", handlers.Crawl)
+
+	// Configuration endpoints
+	r.Get("/config", handlers.GetConfig())
+	r.Post("/config", handlers.SaveConfig())
 }

@@ -4,6 +4,10 @@
 node_modules
 playwright-report
 test-results
+
+# User configuration
+user_config.yaml
+internal/config/user_config.yaml
 __generated__
 .DS_Store
 .DS_Store
