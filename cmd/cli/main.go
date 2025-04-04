@@ -34,19 +34,43 @@ var generateCmd = &cobra.Command{
 		cfg := config.Load()
 		client := llm.New(cfg)
 
-		analysis, err := analyzer.Analyze(cmd.Context(), cfg, client, "https://jakub.kr/", `You are an analyst, your task is to analyze the provided website and generate a list of criteria that can be used by another agent to generate E2E tests.
+		basePrompt := `You are a test planning expert. Your task is to analyze the provided website and generate EXACTLY 4 specific test criteria that can be used by another agent to generate E2E tests.
 
-The criteria should be:
-- Short and concise
-- It must be a list of criteria separated by 2 newlines
-- Cover the most important parts of the website
-- Be easy to understand
-- Be easy to test
-- Focus on simple tests that are easy to write, we can interate later with more complex tests
+		The criteria should:
+		1. Cover the core functionality of the application
+		2. Focus on different user journeys, I am interested in the content of the most valuable pages
+		3. Include both happy path and edge case scenarios
+		4. Be specific enough to be implemented as end-to-end tests
+		5. Be short, concise and easy to understand
+		6. Focus on simple tests that are easy to write (we can iterate later with more complex tests)
+
+		IMPORTANT: Format each criterion as follows:
+
+		CRITERION #1:
+		TITLE: [Short descriptive title]
+		SCENARIO: [Clear description of what should be tested]
+		EXPECTED: [Expected outcome or behavior]
+
+		(Repeat for CRITERION #2, #3, and #4)
+
+		Each criterion must be separated by 2 newlines for proper parsing.
+
+		Example:
+		CRITERION #1:
+		TITLE: User Login Authentication
+		SCENARIO: Verify a registered user can successfully log in with valid credentials
+		EXPECTED: User should be authenticated and redirected to their personalized dashboard
 
 
-IMPORTANT: The critera must be a list of criteria always separated by 2 newlines.
-`)
+		CRITERION #2:
+		TITLE: Product Search Functionality
+		SCENARIO: Verify users can search for products and get relevant results
+		EXPECTED: Search results page should display matching products with correct information`
+
+		websiteDescription := "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests. My orgSlug := \"webscopeio-pb\" and projectSlug := \"ai-hackathon-demo\" for Sentry, please check the errors in the last 14 days and include them in the analysis."
+		basePrompt += `\n\IMPORTANT: You are analyzing the following website:` + websiteDescription
+
+		analysis, err := analyzer.Analyze(cmd.Context(), cfg, client, "https://ai-hackathon-demo-delta.vercel.app/", basePrompt)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
