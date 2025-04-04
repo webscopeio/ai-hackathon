@@ -21,7 +21,8 @@ type CrawlReturn struct {
 }
 
 type GenerateTestsArgs struct {
-	Url string `json:"url"`
+	Url              string `json:"url"`
+	TechSpecification string `json:"techSpecification,omitempty"`
 }
 
 type GenerateTestReturn struct {
