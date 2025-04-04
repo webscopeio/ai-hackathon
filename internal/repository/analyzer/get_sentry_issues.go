@@ -1,4 +1,4 @@
-package analyze
+package analyzer
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 // It requires organization/project slugs and gets the auth token from config
 func GetSentryIssues(ctx context.Context, cfg *config.Config, orgSlug, projectSlug string) ([]models.SentryIssue, error) {
 	logger.Debug("Getting Sentry issues for project: %s/%s", orgSlug, projectSlug)
-	
+
 	// Get auth token from config
 	authToken := cfg.SentryAuthToken
 	if authToken == "" {

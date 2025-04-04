@@ -1,4 +1,4 @@
-package analyze
+package analyzer
 
 import (
 	"context"
@@ -79,17 +79,17 @@ Sitemap: http://example.com/sitemap.xml`))
 func TestGetSitemapIndex(t *testing.T) {
 	// Create a handler that will be updated with the server URL after creation
 	mux := http.NewServeMux()
-	
+
 	// Create a test server with the handler
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	
+
 	// Now set up the handler with the server URL
 	mux.HandleFunc("/sitemap_index.xml", func(w http.ResponseWriter, r *http.Request) {
 		// Return a sitemap index
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusOK)
-		
+
 		// Create the sitemap index XML with the server URL
 		sitemapIndex := strings.ReplaceAll(`<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -102,10 +102,10 @@ func TestGetSitemapIndex(t *testing.T) {
     <lastmod>2025-03-20</lastmod>
   </sitemap>
 </sitemapindex>`, "SERVER_URL", server.URL)
-		
+
 		w.Write([]byte(sitemapIndex))
 	})
-	
+
 	mux.HandleFunc("/sitemap1.xml", func(w http.ResponseWriter, r *http.Request) {
 		// Return the first sitemap
 		w.Header().Set("Content-Type", "application/xml")
@@ -124,7 +124,7 @@ func TestGetSitemapIndex(t *testing.T) {
   </url>
 </urlset>`))
 	})
-	
+
 	// Handle 404 for all other paths
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

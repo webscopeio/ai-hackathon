@@ -22,7 +22,7 @@ type URL struct {
 
 // SitemapIndex represents the XML structure of a sitemap index
 type SitemapIndex struct {
-	XMLName  xml.Name        `xml:"sitemapindex"`
+	XMLName  xml.Name       `xml:"sitemapindex"`
 	Sitemaps []SitemapEntry `xml:"sitemap"`
 }
 
@@ -166,7 +166,7 @@ type CrawlReturn struct {
 }
 
 type GenerateTestsArgs struct {
-	Url              string `json:"url"`
+	Url               string `json:"url"`
 	TechSpecification string `json:"techSpecification,omitempty"`
 }
 
@@ -204,8 +204,19 @@ type SentryTool struct {
 	ProjectSlug string `json:"projectSlug" jsonschema_description:"The Sentry project slug"`
 }
 
+type FinalCriteriaTool struct {
+	Criteria     string `json:"criteria" jsonschema_description:"The criteria to be used for the generation of the E2E tests"`
+	TechSpec string            `json:"techSpec" jsonschema_description:"The technical specification of the website"`
+	ContentMap  map[string]string `json:"contentMap" jsonschema_description:"Map of URLs to their HTML content"`
+}
+
 type AnalyzerToolExample struct {
 	Greeting string `json:"greeting" jsonschema_description:"This is just a friendly greeting"`
+}
+
+type AnalyzerArgs struct {
+	Url    string `json:"url"`
+	Prompt string `json:"prompt"`
 }
 
 type AnalyzerReturn struct {
