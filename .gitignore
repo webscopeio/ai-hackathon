@@ -4,4 +4,8 @@
 node_modules
 playwright-report
 test-results
+<<<<<<< Updated upstream
 __generated__
+=======
+.DS_Store
+>>>>>>> Stashed changes

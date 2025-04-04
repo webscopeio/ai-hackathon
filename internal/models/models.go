@@ -41,6 +41,18 @@ type Failure struct {
 	Error    string `json:"error" jsonschema_description:"Error message or reason for failure"`
 }
 
+type SitemapTool struct {
+	BaseUrl string `json:"baseUrl" jsonschema_description:"The base URL needed to get a website's sitemap"`
+}
+
+type GetContentTool struct {
+	Urls []string `json:"urls" jsonschema_description:"Array of the URLs which content should be retrieved"`
+}
+
+type GetContentToolReturn struct {
+	Contents map[string]string `json:"contents"`
+}
+
 type AnalyzerToolExample struct {
 	Greeting string `json:"greeting" jsonschema_description:"This is just a friendly greeting"`
 }

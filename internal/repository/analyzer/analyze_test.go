@@ -11,12 +11,12 @@ import (
 )
 
 func TestAnalyze(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	cfg := config.Load()
 	llm := llm.New(cfg)
 
-	res, err := Analyze(ctx, llm, "example.com", "Check out the website")
+	res, err := Analyze(ctx, llm, "www.webscope.io", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages.")
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
