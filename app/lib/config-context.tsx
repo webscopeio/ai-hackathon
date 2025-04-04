@@ -5,6 +5,8 @@ import { createContext, useContext, useState, ReactNode } from "react";
 export interface ConfigState {
   anthropicApiKey: string;
   sentryApiKey: string;
+  umamiAPIKey: string;
+  umamiWebsiteId: string;
   techSpecification: string;
 }
 
@@ -17,6 +19,8 @@ interface ConfigContextType {
 const defaultConfig: ConfigState = {
   anthropicApiKey: "",
   sentryApiKey: "",
+  umamiAPIKey: "",
+  umamiWebsiteId: "",
   techSpecification: "",
 };
 
@@ -31,7 +35,9 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   // Check if all required fields are filled
   const isConfigComplete = Boolean(
-    config.anthropicApiKey && config.sentryApiKey && config.techSpecification
+    config.anthropicApiKey && config.sentryApiKey && 
+    config.umamiAPIKey && config.umamiWebsiteId && 
+    config.techSpecification
   );
 
   return (

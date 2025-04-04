@@ -14,6 +14,9 @@ type Config struct {
 	Environment     string
 	APIKey          string
 	SentryAuthToken string
+	UmamiURL        string
+	UmamiAPIKey     string
+	UmamiWebsiteId  string
 }
 
 func Load() *Config {
@@ -22,6 +25,9 @@ func Load() *Config {
 		Environment:     "development",
 		APIKey:          "",
 		SentryAuthToken: "",
+		UmamiURL:        "https://api.umami.is/v1",
+		UmamiAPIKey:     "",
+		UmamiWebsiteId:  "",
 	}
 
 	workDir, _ := os.Getwd()
@@ -59,6 +65,18 @@ func Load() *Config {
 
 	if sentryAuthToken := envMap["SENTRY_AUTH_TOKEN"]; strings.TrimSpace(sentryAuthToken) != "" {
 		cfg.SentryAuthToken = sentryAuthToken
+	}
+
+	if umamiURL := envMap["UMAMI_URL"]; strings.TrimSpace(umamiURL) != "" {
+		cfg.UmamiURL = umamiURL
+	}
+
+	if umamiAPIKey := envMap["UMAMI_API_KEY"]; strings.TrimSpace(umamiAPIKey) != "" {
+		cfg.UmamiAPIKey = umamiAPIKey
+	}
+
+	if umamiWebsiteId := envMap["UMAMI_WEBSITE_ID"]; strings.TrimSpace(umamiWebsiteId) != "" {
+		cfg.UmamiWebsiteId = umamiWebsiteId
 	}
 
 	return cfg

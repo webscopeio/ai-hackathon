@@ -255,3 +255,65 @@ func (r *AnalysisReturn) Validate() error {
 type ErrorReturn struct {
 	Error string `json:"error"`
 }
+
+// UmamiLoginRequest represents the request body for Umami login
+type UmamiLoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// UmamiLoginResponse represents the response from Umami login API
+type UmamiLoginResponse struct {
+	Token     string `json:"token"`
+	ExpiresAt int64  `json:"expiresAt"`
+	User      struct {
+		ID       string `json:"id"`
+		Username string `json:"username"`
+		Role     string `json:"role"`
+	} `json:"user"`
+}
+
+// UmamiSessionsResponse represents the response from the Umami API for sessions
+type UmamiSessionsResponse struct {
+	Data []UmamiSession `json:"data"`
+}
+
+// UmamiSession represents a user session from Umami API
+type UmamiSession struct {
+	ID         string `json:"id"`
+	SessionID  string `json:"sessionId"`
+	BrowserName string `json:"browser"`
+	OSName     string `json:"os"`
+	Device     string `json:"device"`
+	Screen     string `json:"screen"`
+	Language   string `json:"language"`
+	Country    string `json:"country"`
+	Subdivision string `json:"subdivision"`
+	City       string `json:"city"`
+	CreatedAt  string `json:"createdAt"`
+}
+
+// UmamiSessionActivity represents a user activity within a session
+type UmamiSessionActivity struct {
+	CreatedAt      string `json:"createdAt"`
+	URLPath        string `json:"urlPath"`
+	URLQuery       string `json:"urlQuery"`
+	ReferrerDomain string `json:"referrerDomain"`
+	EventID        string `json:"eventId"`
+	EventType      int    `json:"eventType"`
+	EventName      string `json:"eventName"`
+	VisitID        string `json:"visitId"`
+}
+
+// UmamiUserFlow represents a user's path through a website
+type UmamiUserFlow struct {
+	SessionID string   `json:"sessionId"`
+	Path      []string `json:"path"`
+}
+
+// UmamiSignificantFlow represents a common user flow pattern with its frequency
+type UmamiSignificantFlow struct {
+	Path       []string `json:"path"`
+	Frequency  int      `json:"frequency"`
+	Percentage float64  `json:"percentage"`
+}
