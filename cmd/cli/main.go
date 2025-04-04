@@ -44,7 +44,7 @@ var generateCmd = &cobra.Command{
 		5. Be short, concise and easy to understand
 		6. Focus on simple tests that are easy to write (we can iterate later with more complex tests)
 
-		IMPORTANT: Format each criterion as follows:
+		IMPORTANT: Pass all the criteria into the get_final_criteria_tool. Format each criterion as follows:
 
 		CRITERION #1:
 		TITLE: [Short descriptive title]
