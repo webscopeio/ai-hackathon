@@ -9,6 +9,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
+	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
@@ -38,8 +39,8 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
-			Model:     anthropic.ModelClaude3_5HaikuLatest,
-			MaxTokens: 1024,
+			Model:     anthropic.ModelClaude3_5SonnetLatest,
+			MaxTokens: 2048,
 			Messages:  messages,
 			Tools:     tools,
 		})
@@ -103,16 +104,19 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 				// 		return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
 				// 	}
 				case finalCriteriaTool.Name:
+					logger.Debug("FROM ANALYZE: Final criteria tool raw: %s", variant.JSON.Input.Raw())
 					input := models.FinalCriteriaTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
 					if err != nil {
 						return nil, err
 					}
 
+					logger.Debug("FROM ANALYZE: Final contentMap: %s", input.ContentMap)
+
 					return &models.AnalyzerReturn{
-						TechSpec: prompt,
-						SiteMap:  contentMap,
-						Criteria: input.Criteria,
+						TechSpec:   prompt,
+						ContentMap: contentMap,
+						Criteria:   input.Criteria,
 					}, nil
 				}
 

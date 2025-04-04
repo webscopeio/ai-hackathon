@@ -7,7 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
+	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
+	analyze "github.com/webscopeio/ai-hackathon/internal/repository/analyzer"
 	"github.com/webscopeio/ai-hackathon/internal/repository/gen_eval_loop"
 )
 
@@ -30,15 +32,25 @@ var generateCmd = &cobra.Command{
 		cfg := config.Load()
 		client := llm.New(cfg)
 
-		analysis := models.AnalyzerReturn{
-			TechSpec: "A simple one site website that should serve as an example of a website",
-			SiteMap: map[string]string{
-				"https://example.com": `<body><div><h1>Example Domain</h1><p>This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.</p><p><a href="https://www.iana.org/domains/example">More information...</a></p></div></body>`,
-			},
-			Criteria: "Test Criteria:\n1. Verify that the main heading displays 'Example Domain'\n2. Check if the informational paragraph about domain usage is present\n3. Ensure the 'More information' link points to iana.org and is clickable\n4. Validate that all text content is properly rendered",
+		analysis, err := analyze.Analyze(cmd.Context(), cfg, client, "https://jakub.kr/", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests.")
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return
 		}
 
-		filename, err := gen_eval_loop.GenEvalLoop(cmd.Context(), client, &analysis)
+		logger.Debug("CRITERIA FROM THE ANALYZER: %v", analysis.Criteria)
+		logger.Debug("LENGTH OF THE CRITERIA: %d", len(analysis.Criteria))
+
+		if len(analysis.Criteria) == 0 {
+			fmt.Println("Error: No test criteria were generated from the analysis")
+			return
+		}
+
+		filename, err := gen_eval_loop.GenEvalLoop(cmd.Context(), client, &models.AnalyzerReturn{
+			TechSpec:   analysis.TechSpec,
+			ContentMap: analysis.ContentMap,
+			Criteria:   analysis.Criteria,
+		})
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
@@ -46,12 +58,15 @@ var generateCmd = &cobra.Command{
 
 		fmt.Printf("Generated test file: %s\n", filename)
 		// copy the file to the current directory
-		err = os.Rename(filename, "./generate.spec.ts")
+		err = os.Rename(filename, "./__generated__")
 		if err != nil {
 			fmt.Printf("Error copying file: %v\n", err)
 			return
 		}
 		fmt.Printf("Copied test file to current directory: %s\n", "./__generated__")
+
+		return
+
 	},
 }
 
