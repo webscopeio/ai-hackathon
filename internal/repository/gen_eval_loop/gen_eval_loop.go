@@ -25,13 +25,19 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	generatorMessages := []anthropic.MessageParam{}
 	feedback := ""
 	filename := ""
+	testFileContent := []byte{}
+	loopCount := 0
 
 	for {
-		filename, newMessages, err := generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, testsDir)
+		if loopCount > 3 && false {
+			return "", fmt.Errorf("Exceeded maximum number of loops")
+		}
+		filename, newMessages, err := generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
 		generatorMessages = newMessages
+		logger.Debug("Filename: %s", filename)
 
 		var passed bool
 		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, testsDir)
@@ -45,7 +51,14 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 			break
 		}
 
+		testPath := filepath.Join(testsDir, filename)
+		testFileContent, err = os.ReadFile(testPath)
+		if err != nil {
+			return "", fmt.Errorf("ReadTestFile failed: %w", err)
+		}
+
 		feedback = `FEEDBACK: ` + feedback
+		loopCount++
 	}
 
 	filePath := filepath.Join(testsDir, filename)
@@ -55,7 +68,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 
 // Tests generates test files based on a URL using the LLM client
 // It also stores the generated test files in a temporary directory
-func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testsDir string) (string, []anthropic.MessageParam, error) {
+func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string) (string, []anthropic.MessageParam, error) {
 
 	logger.Debug("Starting generateTestFile")
 
@@ -68,8 +81,8 @@ func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *m
 	builder.WriteString("INPUTS: \n")
 	builder.WriteString("TECHNICAL SPECIFICATION: ")
 	builder.WriteString(analyzerReturn.TechSpec)
-	builder.WriteString("\nSITE MAP (SEPARATED BY 2 NEWLINES): ")
-	for url, content := range analyzerReturn.SiteMap {
+	builder.WriteString("\nCONTENT MAP (SEPARATED BY 2 NEWLINES): ")
+	for url, content := range analyzerReturn.ContentMap {
 		builder.WriteString(fmt.Sprintf("%s: %s\n\n", url, content))
 	}
 	builder.WriteString("\nTEST CRITERIA: ")
@@ -83,9 +96,10 @@ The inputs are a technical specification (description) of the website, a map (di
 the test you need to write. Focus on the provided criteria and tech spec. Your output should be one test suite file.
 
 Important points:
-- Critical user flows and main functionality
-- Navigation and routing
-- Error states and edge cases
+- Focus on the provided criteria
+- Do not add any other dependencies, only @playwright/test is allowed.
+- The test file should be around 100 lines of code, the closer the better.
+- Write consise test cases that won't fail instead of complex cases.
 
 Format the tests following Playwright best practices with clear test descriptions and organized test suites.`
 
@@ -104,7 +118,12 @@ Format the tests following Playwright best practices with clear test description
 Invalid formatting will cause errors in processing your response.
 `
 	if feedback != "" {
-		basePrompt = `An Evaluation of the test file has been provided. Please revise the test file based on the feedback.` + feedback
+		basePrompt = `An Evaluation of the test file has been provided. Please revise the test file based on the feedback. Leave everything else the same. Mainly focus on fixing the failing tests. The resulting file should be no longer than 100 lines of code.
+` + feedback
+		basePrompt += `
+TEST FILE CURRENT CONTENT:
+
+` + testFileContent
 	}
 
 	// INFO: for a structured response the client requires tools, ref: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview
@@ -196,8 +215,9 @@ func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, 
 		fmt.Printf("Error executing pnpm test: %v\n", err)
 		fmt.Printf("Test output: %s\n", output)
 		// but we don't want to return, we want to continue the loop
+	} else {
+		fmt.Printf("✅ Tests passed successfully!\n")
 	}
-	fmt.Printf("✅ Tests passed successfully!\n")
 
 	// Analyze the test output
 	var builder strings.Builder
@@ -215,14 +235,12 @@ func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, 
 
 	basePrompt := `You are a test engineer, your task is to evaluate the test file and provide feedback on the test file.
 Your feedback should be concise and to the point. You should provide feedback on the following:
-- Whether the test file is covering the critical user flows and main functionality
-- Whether the test file is covering the navigation and routing
-- Whether the test file is covering the error states and edge cases
-- Whether the test file is following the Playwright best practices
-- Whether the test file is following the test criteria
-- Whether the test scope is too broad or too narrow
+- Focus mainly on fixing the failing tests.
+- The only allowed dependency is @playwright/test, no other dependencies are allowed.
+- Whether the test file is covering the provided criteria
+- The length of the test file should be around 100 lines of code, the closer the better.
+- Whether the test scope is too broad. If the test file is more than 100 lines of code, it is too broad, so suggest what tests to remove (prioritize removing the tests that are failing)
 
-!!! EXTREMELY IMPORTANT: IF YOU DON'T SEE THE WORD "BAILANDO" IN THE TEST CONTENT, REJECT THE TEST FILE AND WRITE INTO THE FEEDBACK THAT THE TEST FILE NEEDS TO CONTAIN THE WORD "BAILANDO" (in a comment is enough) !!!
 
 IMPORTANT: When providing the feedback, ensure proper JSON formatting:
 1. The "passed" field must be a boolean and cannot be empty. You should return "true" if the test file is good enough and the file does not need more work and "false" otherwise.

@@ -205,11 +205,10 @@ type SentryTool struct {
 }
 
 type FinalCriteriaTool struct {
-	Criteria     string `json:"criteria" jsonschema_description:"The criteria to be used for the generation of the E2E tests"`
-	TechSpec string            `json:"techSpec" jsonschema_description:"The technical specification of the website"`
-	ContentMap  map[string]string `json:"contentMap" jsonschema_description:"Map of URLs to their HTML content"`
+	Criteria   string `json:"criteria" jsonschema_description:"The criteria to be used for the generation of the E2E tests"`
+	TechSpec   string `json:"techSpec" jsonschema_description:"The technical specification of the website"`
+	ContentMap string `json:"contentMap" jsonschema_description:"Map of URLs to their HTML content"`
 }
-
 type AnalyzerToolExample struct {
 	Greeting string `json:"greeting" jsonschema_description:"This is just a friendly greeting"`
 }
@@ -220,9 +219,9 @@ type AnalyzerArgs struct {
 }
 
 type AnalyzerReturn struct {
-	TechSpec string            `json:"techSpec"`
-	SiteMap  map[string]string `json:"siteMap"`
-	Criteria string            `json:"criteria"`
+	TechSpec   string            `json:"techSpec"`
+	ContentMap map[string]string `json:"siteMap"`
+	Criteria   string            `json:"criteria"`
 }
 
 type EvaluationReturn struct {

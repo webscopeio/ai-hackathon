@@ -23,5 +23,5 @@ func TestAnalyze(t *testing.T) {
 
 	fmt.Printf("criteria=%v", res.Criteria)
 	fmt.Printf("techSpec=%v", res.TechSpec)
-	fmt.Printf("sitemap=%v", res.SiteMap)
+	fmt.Printf("contentMap=%v", res.ContentMap)
 }
