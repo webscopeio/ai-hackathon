@@ -23,6 +23,8 @@ import { fetchGet } from "@/lib/api.helpers";
 interface ConfigState {
   anthropicApiKey: string;
   sentryApiKey: string;
+  umamiAPIKey: string;
+  umamiWebsiteId: string;
   techSpecification: string;
   productSpecification: string;
 }
@@ -30,6 +32,7 @@ interface ConfigState {
 export function ConfigForm() {
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showSentryKey, setShowSentryKey] = useState(false);
+  const [showUmamiKey, setShowUmamiKey] = useState(false);
   const updateConfigMutation = useUpdateConfig();
   
   // Initialize form with async defaultValues
@@ -43,6 +46,8 @@ export function ConfigForm() {
         return {
           anthropicApiKey: apiConfig?.anthropicApiKey || "",
           sentryApiKey: apiConfig?.sentryApiKey || "",
+          umamiAPIKey: apiConfig?.umamiAPIKey || "",
+          umamiWebsiteId: apiConfig?.umamiWebsiteId || "",
           techSpecification: apiConfig?.techSpecification || "",
           productSpecification: apiConfig?.productSpecification || ""
         };
@@ -52,6 +57,8 @@ export function ConfigForm() {
         return {
           anthropicApiKey: "",
           sentryApiKey: "",
+          umamiAPIKey: "",
+          umamiWebsiteId: "",
           techSpecification: "",
           productSpecification: ""
         };
@@ -152,6 +159,61 @@ export function ConfigForm() {
                     </FormControl>
                     <FormDescription>
                       Your Sentry API key for error tracking integration
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="umamiAPIKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Umami API Key</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="Enter your Umami API key"
+                          type={showUmamiKey ? "text" : "password"}
+                          autoComplete="off"
+                          className="pr-10"
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowUmamiKey(!showUmamiKey)}
+                        >
+                          {showUmamiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          <span className="sr-only">{showUmamiKey ? "Hide" : "Show"} API key</span>
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Your Umami API key for analytics integration
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="umamiWebsiteId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Umami Website ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your Umami Website ID"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Your Umami Website ID for analytics integration
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

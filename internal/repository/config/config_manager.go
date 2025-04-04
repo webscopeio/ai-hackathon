@@ -113,6 +113,12 @@ func (m *Manager) UpdateConfig(updates *models.UserConfig) error {
 	if updates.SentryApiKey != "" {
 		current.SentryApiKey = updates.SentryApiKey
 	}
+	if updates.UmamiAPIKey != "" {
+		current.UmamiAPIKey = updates.UmamiAPIKey
+	}
+	if updates.UmamiWebsiteId != "" {
+		current.UmamiWebsiteId = updates.UmamiWebsiteId
+	}
 	if updates.TechSpecification != "" {
 		current.TechSpecification = updates.TechSpecification
 	}

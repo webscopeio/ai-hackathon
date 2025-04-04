@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 let configStore = {
   anthropicApiKey: "",
   sentryApiKey: "",
+  umamiAPIKey: "",
+  umamiWebsiteId: "",
   techSpecification: "",
 };
 
