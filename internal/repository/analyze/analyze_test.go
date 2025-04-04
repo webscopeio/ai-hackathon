@@ -18,7 +18,7 @@ func TestAnalyze(t *testing.T) {
 
 	// Load configuration (including API key from environment variables)
 	cfg := config.Load()
-	
+
 	if cfg.APIKey == "" {
 		t.Skip("APIKey environment variable not set, skipping test")
 	}
@@ -33,7 +33,6 @@ func TestAnalyze(t *testing.T) {
 
 	// Call the Analyze function
 	result, err := Analyze(ctx, urlStr, maxDepth, maxPathSegments, prompt, client)
-	
 	// Check for errors
 	if err != nil {
 		t.Fatalf("Analyze failed: %v", err)
@@ -42,10 +41,10 @@ func TestAnalyze(t *testing.T) {
 	// Print the results
 	fmt.Println("Analysis Results:")
 	fmt.Println("=================")
-	
+
 	// Print the number of links found
 	fmt.Printf("Links found: %d\n", len(result.Links))
-	
+
 	// Print the first few links (if any)
 	if len(result.Links) > 0 {
 		fmt.Println("Sample links:")
@@ -56,14 +55,14 @@ func TestAnalyze(t *testing.T) {
 			fmt.Printf("  %d. %s\n", i+1, link)
 		}
 	}
-	
+
 	// Print the number of pages crawled
 	fmt.Printf("Pages crawled: %d\n", len(result.Results))
-	
+
 	// Print the analysis
 	fmt.Println("\nAnalysis:")
 	fmt.Println(result.Analysis)
-	
+
 	// Optionally, print the full result as JSON
 	resultJSON, _ := json.MarshalIndent(result, "", "  ")
 	fmt.Println("\nFull result (JSON):")
