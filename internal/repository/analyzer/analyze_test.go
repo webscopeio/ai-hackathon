@@ -18,7 +18,7 @@ func TestAnalyze(t *testing.T) {
 
 	res, err := Analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app/", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests. My orgSlug := \"webscopeio-pb\" and projectSlug := \"ai-hackathon-demo\" for Sentry, please check the errors in the last 14 days and include them in the analysis.")
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Fatalf("Analyze failed: %v", err)
 	}
 
 	fmt.Printf("criteria=%v", res.Criteria)

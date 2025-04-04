@@ -28,6 +28,14 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		*sitemapTool,
 		*getContentTool,
 		*sentryTool,
+		{
+			Name:        "get_significant_user_flows",
+			Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
+			InputSchema: anthropic.ToolInputSchemaParam{
+				Type:       "object",
+				Properties: map[string]string{},
+			},
+		},
 		*finalCriteriaTool,
 	}
 
@@ -105,6 +113,12 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
 					if err != nil {
 						return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
+					}
+				case "get_significant_user_flows":
+					// We analyze the significant user flows based on fixed criteria
+					response, err = GetSignificantUserFlows(ctx, cfg, 7, 2, 2)
+					if err != nil {
+						return nil, fmt.Errorf("failed to get significant user flows: %w", err)
 					}
 				case finalCriteriaTool.Name:
 					logger.Debug("FROM ANALYZE: Final criteria tool raw: %s", variant.JSON.Input.Raw())
