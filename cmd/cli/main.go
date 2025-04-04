@@ -52,9 +52,6 @@ IMPORTANT: The critera must be a list of criteria always separated by 2 newlines
 			return
 		}
 
-		logger.Debug("CRITERIA FROM THE ANALYZER: %v", analysis.Criteria)
-		logger.Debug("LENGTH OF THE CRITERIA: %d", len(analysis.Criteria))
-
 		if len(analysis.Criteria) == 0 {
 			fmt.Println("Error: No test criteria were generated from the analysis")
 			return
@@ -63,16 +60,17 @@ IMPORTANT: The critera must be a list of criteria always separated by 2 newlines
 		// Split criteria by double newlines
 		criteria := strings.Split(analysis.Criteria, "\n\n")
 
+		fmt.Printf("\n[MAIN FLOW] Analyzer generated %d scenarios\n", len(criteria))
 		// print the criteria line by line
-		fmt.Println("CRITERIA LENGTH: ", len(criteria))
+		logger.Debug("CRITERIA LENGTH: %d", len(criteria))
 		for _, c := range criteria {
-			fmt.Println("CRITERIA: ", c)
+			logger.Debug("CRITERIA: %s", c)
 		}
 
 		noOfLoops := 6
 
 		for i, c := range criteria {
-			fmt.Printf("CRITERIA %d: %s\n", i, c)
+			fmt.Printf("\n[MAIN FLOW] Generating test for scenario %d: %s\n", i, c)
 			filename, err := gen_eval_loop.GenEvalLoop(cmd.Context(), client, &models.AnalyzerReturn{
 				TechSpec:   analysis.TechSpec,
 				ContentMap: analysis.ContentMap,
@@ -83,16 +81,16 @@ IMPORTANT: The critera must be a list of criteria always separated by 2 newlines
 				return
 			}
 
-			fmt.Printf("Generated test file: %s\n", filepath.Base(filename))
+			logger.Debug("[MAIN FLOW] Writing test file: %s\n", filepath.Base(filename))
 
 			// copy the file to the current directory
 			destPath := filepath.Join("./__generated__", filepath.Base(filename))
+			fmt.Printf("\n[MAIN FLOW] Writing generated test file to %s\n", destPath)
 			err = os.Rename(filename, destPath)
 			if err != nil {
 				fmt.Printf("Error copying file: %v\n", err)
 				return
 			}
-			fmt.Printf("Copied test file to current directory: %s\n", destPath)
 		}
 
 		return

@@ -39,14 +39,14 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 		logger.Debug("Filename: %s", filename)
 
 		var passed bool
-		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, testsDir)
+		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir)
 		logger.Debug("EVALUATOR feedback: %s", feedback)
 		if err != nil {
 			return "", fmt.Errorf("EvaluateTestFile failed: %w", err)
 		}
 
 		if passed {
-			fmt.Printf("✅ Evaluator accepted the test file.\n")
+			logger.Debug("[GEN_EVAL_LOOP] Evaluator accepted the test file.")
 			break
 		}
 
@@ -120,6 +120,9 @@ Invalid formatting will cause errors in processing your response.
 TEST FILE CURRENT CONTENT:
 
 ` + testFileContent
+		fmt.Println("\n[GENERATOR] Calling Generator with feedback.")
+	} else {
+		fmt.Println("\n[GENERATOR] Calling Generator with base prompt.")
 	}
 
 	// INFO: for a structured response the client requires tools, ref: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview
@@ -184,16 +187,16 @@ TEST FILE CURRENT CONTENT:
 	}
 
 	// TODO: we need to do somethign with the dependencies
-	fmt.Println("Dependencies:")
+	logger.Debug("Dependencies:")
 	for _, dep := range response.Dependencies {
-		fmt.Printf("  - %s\n", dep)
+		logger.Debug("  - %s\n", dep)
 	}
 
-	logger.Debug("GenerateTest completed successfully")
+	fmt.Printf("[GENERATOR] GenerateTest successfuly generated test file: %s\n", filePath)
 	return filePath, newMessages, nil
 }
 
-func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, testsDir string) (string, bool, error) {
+func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string) (string, bool, error) {
 	// List the provided test file
 	content, err := os.ReadFile(filename)
 	if err != nil {
@@ -203,15 +206,15 @@ func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, 
 	// Run pnpm test
 	testCmd := exec.Command("pnpm", "test", filename)
 	testCmd.Dir = tempDir
-	fmt.Printf("Running tests in %s...\n", tempDir)
+	logger.Debug("Running tests in %s...", tempDir)
 	output, err := testCmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("❌ Tests failed!\n")
-		fmt.Printf("Error executing pnpm test: %v\n", err)
-		fmt.Printf("Test output: %s\n", output)
+		logger.Debug("❌ Tests failed!\n")
+		logger.Debug("Error executing pnpm test: %v\n", err)
+		logger.Debug("Test output: %s\n", output)
 		// but we don't want to return, we want to continue the loop
 	} else {
-		fmt.Printf("✅ Tests passed successfully!\n")
+		logger.Debug("✅ Tests passed successfully!\n")
 	}
 
 	// Analyze the test output
@@ -254,6 +257,8 @@ Invalid formatting will cause errors in processing your response.
 	// INFO: for a structured response the client requires tools, ref: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview
 	tool, toolChoice := llm.GenerateTool[models.EvaluationReturn]("get_generate_feedback_return", "")
 
+	fmt.Printf("[EVALUATOR] Calling Evaluator with context length: %d characters\n", len(context))
+	fmt.Println("[EVALUATOR] and test result + file content")
 	rawResponse, err := client.GetStructuredCompletion(
 		ctx,
 		context,
@@ -272,12 +277,12 @@ Invalid formatting will cause errors in processing your response.
 	}
 
 	if response.Passed {
-		fmt.Printf("✅ Evaluator accepted the test file.\n")
+		fmt.Printf("[EVALUATOR] Evaluator accepted the test file ✅\n")
 		return "", true, nil
 	}
 
-	fmt.Printf("❌ Evaluator rejected the test file.\n")
-	fmt.Printf("Feedback: %s\n", response.Feedback)
+	fmt.Printf("[EVALUATOR] Evaluator rejected the test file ❌\n")
+	fmt.Printf("[EVALUATOR] With the following feedback:\n\n %s\n", response.Feedback)
 
 	return response.Feedback, false, nil
 }
@@ -288,7 +293,7 @@ func SetupTestEnvironment(ctx context.Context) (string, string, error) {
 	// Create a temporary directory to store the test files
 	tempDir, err := os.MkdirTemp("", "playwright-tests-")
 	if err != nil {
-		fmt.Printf("Error creating temporary directory: %v\n", err)
+		logger.Debug("Error creating temporary directory: %v\n", err)
 		return "", "", fmt.Errorf("couldn't create temporary directory: %w", err)
 	}
 
@@ -297,7 +302,7 @@ func SetupTestEnvironment(ctx context.Context) (string, string, error) {
 	// Create a tests directory within the temporary directory
 	testsDir := filepath.Join(tempDir, "tests")
 	if err := os.MkdirAll(testsDir, 0755); err != nil {
-		fmt.Printf("Error creating tests directory: %v\n", err)
+		logger.Debug("Error creating tests directory: %v\n", err)
 		return tempDir, "", fmt.Errorf("couldn't create tests directory: %w", err)
 	}
 	logger.Debug("Created tests directory at: %s", testsDir)
@@ -305,7 +310,7 @@ func SetupTestEnvironment(ctx context.Context) (string, string, error) {
 	// Get the absolute path to the src directory
 	currentDir, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("Error getting current directory: %v\n", err)
+		logger.Debug("Error getting current directory: %v\n", err)
 		return tempDir, testsDir, fmt.Errorf("couldn't get current directory: %w", err)
 	}
 
@@ -321,20 +326,20 @@ func SetupTestEnvironment(ctx context.Context) (string, string, error) {
 
 		src, err := os.Open(srcFile)
 		if err != nil {
-			fmt.Printf("Error opening source file %s: %v\n", file, err)
+			logger.Debug("Error opening source file %s: %v\n", file, err)
 			return tempDir, testsDir, fmt.Errorf("couldn't open source file %s: %w", file, err)
 		}
 		defer src.Close()
 
 		dst, err := os.Create(dstFile)
 		if err != nil {
-			fmt.Printf("Error creating destination file %s: %v\n", file, err)
+			logger.Debug("Error creating destination file %s: %v\n", file, err)
 			return tempDir, testsDir, fmt.Errorf("couldn't create destination file %s: %w", file, err)
 		}
 		defer dst.Close()
 
 		if _, err = io.Copy(dst, src); err != nil {
-			fmt.Printf("Error copying file %s: %v\n", file, err)
+			logger.Debug("Error copying file %s: %v\n", file, err)
 			return tempDir, testsDir, fmt.Errorf("couldn't copy file %s: %w", file, err)
 		}
 	}
@@ -342,28 +347,28 @@ func SetupTestEnvironment(ctx context.Context) (string, string, error) {
 	// Run pnpm install
 	installCmd := exec.Command("pnpm", "i")
 	installCmd.Dir = tempDir
-	fmt.Printf("Running pnpm install in %s...\n", tempDir)
+	logger.Debug("Running pnpm install in %s...", tempDir)
 	output, err := installCmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("❌ Installation failed!\n")
-		fmt.Printf("Error executing pnpm install: %v\n", err)
-		fmt.Printf("Installation output: %s\n", output)
+		logger.Debug("❌ Installation failed!\n")
+		logger.Debug("Error executing pnpm install: %v\n", err)
+		logger.Debug("Installation output: %s\n", output)
 		return tempDir, testsDir, fmt.Errorf("couldn't execute pnpm install: %w", err)
 	}
-	fmt.Printf("✅ Installation completed successfully!\n")
+	logger.Debug("✅ Installation completed successfully!\n")
 
 	// Install browsers
 	playwrightCmd := exec.Command("npx", "playwright", "install")
 	playwrightCmd.Dir = tempDir
-	fmt.Printf("Running npx playwright install in %s...\n", tempDir)
+	logger.Debug("Running npx playwright install in %s...", tempDir)
 	output, err = playwrightCmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("❌ Installation failed!\n")
-		fmt.Printf("Error executing npx playwright install: %v\n", err)
-		fmt.Printf("Installation output: %s\n", output)
+		logger.Debug("❌ Installation failed!\n")
+		logger.Debug("Error executing npx playwright install: %v\n", err)
+		logger.Debug("Installation output: %s\n", output)
 		return tempDir, testsDir, fmt.Errorf("couldn't install playwright: %w", err)
 	}
-	fmt.Printf("✅ Installation completed successfully!\n")
+	logger.Debug("✅ Installation completed successfully!\n")
 
 	return tempDir, testsDir, nil
 }

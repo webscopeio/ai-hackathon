@@ -14,8 +14,9 @@ import (
 )
 
 func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr string, prompt string) (*models.AnalyzerReturn, error) {
+	userMessage := fmt.Sprintf("The website is: %s - %s", urlStr, prompt)
 	messages := []anthropic.MessageParam{
-		anthropic.NewUserMessage(anthropic.NewTextBlock(fmt.Sprintf("The website is: %s - %s", urlStr, prompt))),
+		anthropic.NewUserMessage(anthropic.NewTextBlock(userMessage)),
 	}
 
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
@@ -37,6 +38,8 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	var contentMap map[string]string
 
+	fmt.Println("\n[ANALYZER] User Message: \n\n", userMessage)
+
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
 			Model:     anthropic.ModelClaude3_5SonnetLatest,
@@ -52,10 +55,10 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		for _, block := range message.Content {
 			switch block := block.AsAny().(type) {
 			case anthropic.TextBlock:
-				fmt.Println(block.Text)
+				fmt.Printf("\n[ANALYZER] Agent response: \n\n%s\n", block.Text)
 			case anthropic.ToolUseBlock:
 				inputJSON, _ := json.Marshal(block.Input)
-				fmt.Println(block.Name + ": " + string(inputJSON))
+				fmt.Printf("\n[ANALYZER] Tool call: \n\n%s\n", block.Name+": "+string(inputJSON))
 			}
 		}
 
@@ -66,7 +69,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 			switch variant := block.AsAny().(type) {
 			case anthropic.ToolUseBlock:
 				var response any
-				fmt.Println("Running block", block.Name)
+				// fmt.Println("Running block", block.Name)
 				switch block.Name {
 				case sitemapTool.Name:
 					input := models.SitemapTool{}
