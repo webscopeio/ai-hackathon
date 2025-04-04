@@ -20,13 +20,13 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
 	getContentTool, _ := llm.GenerateTool[models.GetContentTool]("get_content_tool", "This tool is able to get the body content for a list of important URLs")
-	// sentryTool, _ := llm.GenerateTool[models.SentryTool]("get_sentry_tool", "This tool is able to get error information from Sentry for a specific project to give you a better context about the website")
+	sentryTool, _ := llm.GenerateTool[models.SentryTool]("get_sentry_tool", "This tool is able to get error information from Sentry for a specific project to give you a better context about the website")
 	finalCriteriaTool, _ := llm.GenerateTool[models.FinalCriteriaTool]("get_final_criteria_tool", "This tool is able to get the final criteria for the analysis of the website from results of the other tools, run this always as the last step")
 
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
-		// *sentryTool,
+		*sentryTool,
 		*finalCriteriaTool,
 	}
 
@@ -92,17 +92,17 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					}
 					contentMap = result.Contents
 					response = result
-				// case sentryTool.Name:
-				// 	input := models.SentryTool{}
-				// 	err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
-				// 	if err != nil {
-				// 		return nil, err
-				// 	}
+				case sentryTool.Name:
+					input := models.SentryTool{}
+					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
+					if err != nil {
+						return nil, err
+					}
 
-				// 	response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
-				// 	if err != nil {
-				// 		return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
-				// 	}
+					response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
+					if err != nil {
+						return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
+					}
 				case finalCriteriaTool.Name:
 					logger.Debug("FROM ANALYZE: Final criteria tool raw: %s", variant.JSON.Input.Raw())
 					input := models.FinalCriteriaTool{}
