@@ -16,7 +16,7 @@ func TestAnalyze(t *testing.T) {
 	cfg := config.Load()
 	llm := llm.New(cfg)
 
-	res, err := Analyze(ctx, cfg, llm, "www.webscope.io", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages.")
+	res, err := Analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages.")
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
