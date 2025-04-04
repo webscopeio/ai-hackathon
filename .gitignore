@@ -10,5 +10,7 @@ user_config.yaml
 internal/config/user_config.yaml
 __generated__/*
 !__generated__/.gitkeep
+__pregenerated__/*
+!__pregenerated__/.gitkeep
 .DS_Store
 .DS_Store
