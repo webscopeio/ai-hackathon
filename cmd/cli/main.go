@@ -69,13 +69,15 @@ IMPORTANT: The critera must be a list of criteria always separated by 2 newlines
 			fmt.Println("CRITERIA: ", c)
 		}
 
+		noOfLoops := 6
+
 		for i, c := range criteria {
 			fmt.Printf("CRITERIA %d: %s\n", i, c)
 			filename, err := gen_eval_loop.GenEvalLoop(cmd.Context(), client, &models.AnalyzerReturn{
 				TechSpec:   analysis.TechSpec,
 				ContentMap: analysis.ContentMap,
 				Criteria:   analysis.Criteria,
-			})
+			}, i+1, noOfLoops)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
 				return

@@ -16,7 +16,7 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn) (string, error) {
+func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int) (string, error) {
 	tempDir, testsDir, err := SetupTestEnvironment(ctx)
 	if err != nil {
 		return "", fmt.Errorf("SetupTestEnvironment failed: %w", err)
@@ -29,10 +29,10 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	loopCount := 0
 
 	for {
-		if loopCount > 5 {
-			return "", fmt.Errorf("Exceeded maximum number of loops")
+		if loopCount > noOfLoops {
+			return filename, nil
 		}
-		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir)
+		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
@@ -64,7 +64,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 
 // Tests generates test files based on a URL using the LLM client
 // It also stores the generated test files in a temporary directory
-func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string) (string, []anthropic.MessageParam, error) {
+func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int) (string, []anthropic.MessageParam, error) {
 
 	logger.Debug("Starting generateTestFile")
 
@@ -176,7 +176,7 @@ TEST FILE CURRENT CONTENT:
 	logger.Debug("Response validation successful")
 
 	logger.Debug("Write the test file to a temporary file")
-	filePath := filepath.Join(testsDir, response.FileName)
+	filePath := filepath.Join(testsDir, fmt.Sprintf("test-%d-%s", index, response.FileName))
 
 	// Write the test file
 	if err := os.WriteFile(filePath, []byte(response.Content), 0644); err != nil {
