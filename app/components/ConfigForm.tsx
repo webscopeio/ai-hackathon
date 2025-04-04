@@ -24,6 +24,7 @@ interface ConfigState {
   anthropicApiKey: string;
   sentryApiKey: string;
   techSpecification: string;
+  productSpecification: string;
 }
 
 export function ConfigForm() {
@@ -42,7 +43,8 @@ export function ConfigForm() {
         return {
           anthropicApiKey: apiConfig?.anthropicApiKey || "",
           sentryApiKey: apiConfig?.sentryApiKey || "",
-          techSpecification: apiConfig?.techSpecification || ""
+          techSpecification: apiConfig?.techSpecification || "",
+          productSpecification: apiConfig?.productSpecification || ""
         };
       } catch (error) {
         console.error('Error fetching config:', error);
@@ -50,7 +52,8 @@ export function ConfigForm() {
         return {
           anthropicApiKey: "",
           sentryApiKey: "",
-          techSpecification: ""
+          techSpecification: "",
+          productSpecification: ""
         };
       }
     }
@@ -149,6 +152,28 @@ export function ConfigForm() {
                     </FormControl>
                     <FormDescription>
                       Your Sentry API key for error tracking integration
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+<FormField
+                control={form.control}
+                name="productSpecification"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Specification</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe your product, its features, and user requirements..."
+                        className="min-h-32"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide details about your product's purpose, features, and user requirements
+                      that should be considered when generating tests
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

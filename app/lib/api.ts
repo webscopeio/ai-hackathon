@@ -40,6 +40,7 @@ export type ConfigData = {
   anthropicApiKey: string;
   sentryApiKey: string;
   techSpecification: string;
+  productSpecification: string;
 };
 
 export type ConfigReturn = ConfigData;
