@@ -93,7 +93,6 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 		cleanedHtml = scriptRegex.ReplaceAllString(cleanedHtml, "")
 		cleanedHtml = svgRegex.ReplaceAllString(cleanedHtml, "")
 
-		fmt.Println("contents for url is ready", url, cleanedHtml[:1000])
 		mutex.Lock()
 		results[url] = cleanedHtml
 		mutex.Unlock()

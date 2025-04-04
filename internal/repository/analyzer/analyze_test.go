@@ -16,10 +16,12 @@ func TestAnalyze(t *testing.T) {
 	cfg := config.Load()
 	llm := llm.New(cfg)
 
-	res, err := Analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages.")
+	res, err := Analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app/", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests.")
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 
-	fmt.Printf("res=%v", res)
+	fmt.Printf("criteria=%v", res.Criteria)
+	fmt.Printf("techSpec=%v", res.TechSpec)
+	fmt.Printf("sitemap=%v", res.SiteMap)
 }
