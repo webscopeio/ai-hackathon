@@ -3,6 +3,7 @@ package analyzer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -18,18 +19,22 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
 	getContentTool, _ := llm.GenerateTool[models.GetContentTool]("get_content_tool", "This tool is able to get the body content for a list of important URLs")
-	sentryTool, _ := llm.GenerateTool[models.SentryTool]("sentry_tool", "This tool is able to get error information from Sentry for a specific project")
+	// sentryTool, _ := llm.GenerateTool[models.SentryTool]("get_sentry_tool", "This tool is able to get error information from Sentry for a specific project to give you a better context about the website")
+	finalCriteriaTool, _ := llm.GenerateTool[models.FinalCriteriaTool]("get_final_criteria_tool", "This tool is able to get the final criteria for the analysis of the website from results of the other tools, run this always as the last step")
 
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
-		*sentryTool,
+		// *sentryTool,
+		*finalCriteriaTool,
 	}
 
 	tools := make([]anthropic.ToolUnionParam, len(toolParams))
 	for i, toolParam := range toolParams {
 		tools[i] = anthropic.ToolUnionParam{OfTool: &toolParam}
 	}
+
+	var contentMap map[string]string
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
@@ -60,6 +65,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 			switch variant := block.AsAny().(type) {
 			case anthropic.ToolUseBlock:
 				var response any
+				fmt.Println("Running block", block.Name)
 				switch block.Name {
 				case sitemapTool.Name:
 					input := models.SitemapTool{}
@@ -79,21 +85,35 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					response, err = GetContent(ctx, input.Urls)
+					result, err := GetContent(ctx, input.Urls)
 					if err != nil {
 						return nil, err
 					}
-				case sentryTool.Name:
-					input := models.SentryTool{}
+					contentMap = result.Contents
+					response = result
+				// case sentryTool.Name:
+				// 	input := models.SentryTool{}
+				// 	err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
+				// 	if err != nil {
+				// 		return nil, err
+				// 	}
+
+				// 	response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
+				// 	if err != nil {
+				// 		return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
+				// 	}
+				case finalCriteriaTool.Name:
+					input := models.FinalCriteriaTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
 					if err != nil {
 						return nil, err
 					}
 
-					response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
-					if err != nil {
-						return nil, err
-					}
+					return &models.AnalyzerReturn{
+						TechSpec: prompt,
+						SiteMap:  contentMap,
+						Criteria: input.Criteria,
+					}, nil
 				}
 
 				b, err := json.Marshal(response)
@@ -110,16 +130,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		}
 
 		messages = append(messages, anthropic.NewUserMessage(toolResults...))
-
 	}
 
-	// Create a simple analyzer return with dummy data
-	// In a real implementation, this would process the LLM's final response
-	return &models.AnalyzerReturn{
-		TechSpec: "Website technology analysis",
-		SiteMap: map[string]string{
-			"home": urlStr,
-		},
-		Criteria: "Analysis criteria",
-	}, nil
+	return nil, errors.New("no valid response from the model")
 }

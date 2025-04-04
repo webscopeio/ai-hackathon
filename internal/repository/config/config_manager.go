@@ -116,6 +116,8 @@ func (m *Manager) UpdateConfig(updates *models.UserConfig) error {
 	if updates.TechSpecification != "" {
 		current.TechSpecification = updates.TechSpecification
 	}
+	// Always update the product specification, even if empty
+	current.ProductSpecification = updates.ProductSpecification
 
 	// Save updated config
 	return m.SaveConfig(current)
