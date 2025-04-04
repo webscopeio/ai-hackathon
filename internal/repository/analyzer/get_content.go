@@ -54,6 +54,7 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 	classRegex := regexp.MustCompile(`\s+class\s*=\s*"[^"]*"|\s+class\s*=\s*'[^']*'`)
 	styleRegex := regexp.MustCompile(`\s+style\s*=\s*"[^"]*"|\s+style\s*=\s*'[^']*'`)
 	scriptRegex := regexp.MustCompile(`<script\b[^>]*>[\s\S]*?</script>`)
+	svgRegex := regexp.MustCompile(`<svg\b[^>]*>[\s\S]*?</svg>`)
 
 	c := colly.NewCollector(
 		colly.Async(true),
@@ -90,6 +91,7 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 		cleanedHtml := classRegex.ReplaceAllString(html, "")
 		cleanedHtml = styleRegex.ReplaceAllString(cleanedHtml, "")
 		cleanedHtml = scriptRegex.ReplaceAllString(cleanedHtml, "")
+		cleanedHtml = svgRegex.ReplaceAllString(cleanedHtml, "")
 
 		fmt.Println("contents for url is ready", url, cleanedHtml[:1000])
 		mutex.Lock()

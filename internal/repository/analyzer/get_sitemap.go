@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -9,37 +10,12 @@ import (
 	"strings"
 
 	"github.com/webscopeio/ai-hackathon/internal/logger"
+	"github.com/webscopeio/ai-hackathon/internal/models"
 )
-
-// Sitemap represents the XML structure of a sitemap
-type Sitemap struct {
-	XMLName xml.Name `xml:"urlset"`
-	URLs    []URL    `xml:"url"`
-}
-
-// URL represents a URL entry in a sitemap
-type URL struct {
-	Loc        string  `xml:"loc"`
-	LastMod    string  `xml:"lastmod,omitempty"`
-	ChangeFreq string  `xml:"changefreq,omitempty"`
-	Priority   float64 `xml:"priority,omitempty"`
-}
-
-// SitemapIndex represents the XML structure of a sitemap index
-type SitemapIndex struct {
-	XMLName  xml.Name        `xml:"sitemapindex"`
-	Sitemaps []SitemapEntry `xml:"sitemap"`
-}
-
-// SitemapEntry represents a sitemap entry in a sitemap index
-type SitemapEntry struct {
-	Loc     string `xml:"loc"`
-	LastMod string `xml:"lastmod,omitempty"`
-}
 
 // GetSitemap attempts to retrieve and parse a sitemap from a given URL
 // It tries common sitemap locations if not explicitly provided
-func GetSitemap(baseURL string) (*Sitemap, error) {
+func GetSitemap(ctx context.Context, baseURL string) (*models.Sitemap, error) {
 	logger.Debug("Getting sitemap for URL: %s", baseURL)
 	
 	// Parse the base URL
@@ -64,7 +40,7 @@ func GetSitemap(baseURL string) (*Sitemap, error) {
 	
 	// Try to find robots.txt first, which might contain sitemap URL
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	robotsSitemapURL := getSitemapFromRobots(robotsURL)
+	robotsSitemapURL := getSitemapFromRobots(ctx, robotsURL)
 	if robotsSitemapURL != "" {
 		sitemapURLs = append([]string{robotsSitemapURL}, sitemapURLs...)
 	}
@@ -74,20 +50,20 @@ func GetSitemap(baseURL string) (*Sitemap, error) {
 		logger.Debug("Trying sitemap URL: %s", sitemapURL)
 		
 		// Try to get the sitemap
-		sitemap, err := fetchSitemap(sitemapURL)
+		sitemap, err := fetchSitemap(ctx, sitemapURL)
 		if err == nil && sitemap != nil && len(sitemap.URLs) > 0 {
 			logger.Debug("Found sitemap at %s with %d URLs", sitemapURL, len(sitemap.URLs))
 			return sitemap, nil
 		}
 		
 		// If we get a sitemap index instead, try to get the first sitemap from it
-		sitemapIndex, err := fetchSitemapIndex(sitemapURL)
+		sitemapIndex, err := fetchSitemapIndex(ctx, sitemapURL)
 		if err == nil && sitemapIndex != nil && len(sitemapIndex.Sitemaps) > 0 {
 			logger.Debug("Found sitemap index at %s with %d sitemaps", sitemapURL, len(sitemapIndex.Sitemaps))
 			
 			// Get the first sitemap from the index
 			firstSitemapURL := sitemapIndex.Sitemaps[0].Loc
-			sitemap, err := fetchSitemap(firstSitemapURL)
+			sitemap, err := fetchSitemap(ctx, firstSitemapURL)
 			if err == nil && sitemap != nil {
 				logger.Debug("Found sitemap at %s with %d URLs", firstSitemapURL, len(sitemap.URLs))
 				return sitemap, nil
@@ -99,8 +75,14 @@ func GetSitemap(baseURL string) (*Sitemap, error) {
 }
 
 // fetchSitemap attempts to retrieve and parse a sitemap from a given URL
-func fetchSitemap(sitemapURL string) (*Sitemap, error) {
-	resp, err := http.Get(sitemapURL)
+func fetchSitemap(ctx context.Context, sitemapURL string) (*models.Sitemap, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", sitemapURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +97,7 @@ func fetchSitemap(sitemapURL string) (*Sitemap, error) {
 		return nil, err
 	}
 	
-	var sitemap Sitemap
+	var sitemap models.Sitemap
 	err = xml.Unmarshal(body, &sitemap)
 	if err != nil {
 		return nil, err
@@ -125,8 +107,14 @@ func fetchSitemap(sitemapURL string) (*Sitemap, error) {
 }
 
 // fetchSitemapIndex attempts to retrieve and parse a sitemap index from a given URL
-func fetchSitemapIndex(sitemapURL string) (*SitemapIndex, error) {
-	resp, err := http.Get(sitemapURL)
+func fetchSitemapIndex(ctx context.Context, sitemapURL string) (*models.SitemapIndex, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", sitemapURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +129,7 @@ func fetchSitemapIndex(sitemapURL string) (*SitemapIndex, error) {
 		return nil, err
 	}
 	
-	var sitemapIndex SitemapIndex
+	var sitemapIndex models.SitemapIndex
 	err = xml.Unmarshal(body, &sitemapIndex)
 	if err != nil {
 		return nil, err
@@ -151,8 +139,14 @@ func fetchSitemapIndex(sitemapURL string) (*SitemapIndex, error) {
 }
 
 // getSitemapFromRobots tries to extract sitemap URL from robots.txt
-func getSitemapFromRobots(robotsURL string) string {
-	resp, err := http.Get(robotsURL)
+func getSitemapFromRobots(ctx context.Context, robotsURL string) string {
+	req, err := http.NewRequestWithContext(ctx, "GET", robotsURL, nil)
+	if err != nil {
+		return ""
+	}
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return ""
 	}
