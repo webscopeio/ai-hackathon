@@ -1,4 +1,4 @@
-package analyze
+package analyzer
 
 import (
 	"context"
@@ -112,7 +112,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		messages = append(messages, anthropic.NewUserMessage(toolResults...))
 
 	}
-	
+
 	// Create a simple analyzer return with dummy data
 	// In a real implementation, this would process the LLM's final response
 	return &models.AnalyzerReturn{

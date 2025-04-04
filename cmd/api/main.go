@@ -20,7 +20,7 @@ func main() {
 	r.Use(httprate.LimitByIP(100, time.Minute))
 
 	llm := llm.New(cfg)
-	router.RegisterRoutes(r, llm)
+	router.RegisterRoutes(r, cfg, llm)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	fmt.Printf("Server starting on localhost%s in %s mode\n", addr, cfg.Environment)
