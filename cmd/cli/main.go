@@ -9,7 +9,7 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/llm"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
-	analyze "github.com/webscopeio/ai-hackathon/internal/repository/analyzer"
+	"github.com/webscopeio/ai-hackathon/internal/repository/analyzer"
 	"github.com/webscopeio/ai-hackathon/internal/repository/gen_eval_loop"
 )
 
@@ -32,7 +32,7 @@ var generateCmd = &cobra.Command{
 		cfg := config.Load()
 		client := llm.New(cfg)
 
-		analysis, err := analyze.Analyze(cmd.Context(), cfg, client, "https://jakub.kr/", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests.")
+		analysis, err := analyzer.Analyze(cmd.Context(), cfg, client, "https://jakub.kr/", "Check out the website, wonder how is it structured?. I am interested in the content of the most valuable pages to create the criteria to generate an E2E tests.")
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
