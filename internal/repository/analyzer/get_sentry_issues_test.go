@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -25,8 +26,8 @@ func TestGetSentryIssues(t *testing.T) {
 	orgSlug := "webscopeio-pb"
 	projectSlug := "ai-hackathon-demo"
 
-	// Call the function with real credentials
-	issues, err := GetSentryIssues(cfg.SentryAuthToken, orgSlug, projectSlug)
+	// Call the function with context and config
+	issues, err := GetSentryIssues(context.Background(), cfg, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting Sentry issues: %v", err)
@@ -69,7 +70,7 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 	tagKey := "url"
 
 	// Call the function to get issues
-	issues, err := GetSentryIssues(cfg.SentryAuthToken, orgSlug, projectSlug)
+	issues, err := GetSentryIssues(context.Background(), cfg, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting Sentry issues: %v", err)
@@ -90,7 +91,7 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 		t.Logf("\nIssue %d/%d: %s - %s", i+1, maxIssues, issue.ShortID, issue.Title)
 
 		// Get details for the tag
-		tagDetails, err := GetSentryIssueTagDetails(cfg.SentryAuthToken, orgSlug, issue.ID, tagKey)
+		tagDetails, err := GetSentryIssueTagDetails(context.Background(), cfg, orgSlug, issue.ID, tagKey)
 		if err != nil {
 			t.Logf("  Error getting tag details for %s: %v", tagKey, err)
 			continue
@@ -133,8 +134,8 @@ func TestGetSentryIssueTagValuesSorted(t *testing.T) {
 	// Tag key to test
 	tagKey := "url"
 
-	// Call the function with real credentials
-	sortedValues, err := GetSentryIssueTagValuesSorted(cfg.SentryAuthToken, orgSlug, issueID, tagKey)
+	// Call the function with context and config
+	sortedValues, err := GetSentryIssueTagValuesSorted(context.Background(), cfg, orgSlug, issueID, tagKey)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials, issue ID, and tag key to pass")
 		t.Logf("Error getting sorted tag values: %v", err)
@@ -180,8 +181,8 @@ func TestGetAffectedSentryPaths(t *testing.T) {
 	orgSlug := "webscopeio-pb"
 	projectSlug := "ai-hackathon-demo"
 
-	// Call the function with real credentials
-	affectedPaths, err := GetAffectedSentryPaths(cfg.SentryAuthToken, orgSlug, projectSlug)
+	// Call the function with context and config
+	affectedPaths, err := GetAffectedSentryPaths(context.Background(), cfg, orgSlug, projectSlug)
 	if err != nil {
 		t.Logf("Note: This test requires valid Sentry credentials to pass")
 		t.Logf("Error getting affected Sentry paths: %v", err)

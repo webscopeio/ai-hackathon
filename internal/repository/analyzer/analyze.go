@@ -18,10 +18,12 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
 	getContentTool, _ := llm.GenerateTool[models.GetContentTool]("get_content_tool", "This tool is able to get the body content for a list of important URLs")
+	sentryTool, _ := llm.GenerateTool[models.SentryTool]("sentry_tool", "This tool is able to get error information from Sentry for a specific project")
 
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
+		*sentryTool,
 	}
 
 	tools := make([]anthropic.ToolUnionParam, len(toolParams))
@@ -66,7 +68,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					response, err = GetSitemap(input.BaseUrl)
+					response, err = GetSitemap(ctx, input.BaseUrl)
 					if err != nil {
 						return nil, err
 					}
@@ -78,6 +80,17 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					}
 
 					response, err = GetContent(ctx, input.Urls)
+					if err != nil {
+						return nil, err
+					}
+				case sentryTool.Name:
+					input := models.SentryTool{}
+					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
+					if err != nil {
+						return nil, err
+					}
+
+					response, err = GetSentryIssues(ctx, cfg, input.OrgSlug, input.ProjectSlug)
 					if err != nil {
 						return nil, err
 					}
@@ -99,5 +112,14 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		messages = append(messages, anthropic.NewUserMessage(toolResults...))
 
 	}
-	return nil, nil
+	
+	// Create a simple analyzer return with dummy data
+	// In a real implementation, this would process the LLM's final response
+	return &models.AnalyzerReturn{
+		TechSpec: "Website technology analysis",
+		SiteMap: map[string]string{
+			"home": urlStr,
+		},
+		Criteria: "Analysis criteria",
+	}, nil
 }
