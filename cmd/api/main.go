@@ -2,27 +2,50 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-	"time"
 
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate"
-	"github.com/webscopeio/ai-hackathon/internal/config"
-	"github.com/webscopeio/ai-hackathon/internal/llm"
-	"github.com/webscopeio/ai-hackathon/internal/router"
+	"github.com/gorilla/websocket"
 )
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for development
+	},
+}
+
+func echo(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	defer c.Close()
+	for {
+		mt, message, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			break
+		}
+		log.Printf("recv: %s", message)
+		err = c.WriteMessage(mt, message)
+		if err != nil {
+			log.Println("write:", err)
+			break
+		}
+	}
+}
+
 func main() {
-	cfg := config.Load()
+	http.HandleFunc("/ws", echo)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("WebSocket server initialized"))
+	})
 
-	r := router.New()
-	r.Use(middleware.Logger)
-	r.Use(httprate.LimitByIP(100, time.Minute))
-
-	llm := llm.New(cfg)
-	router.RegisterRoutes(r, cfg, llm)
-
-	addr := fmt.Sprintf(":%s", cfg.Port)
-	fmt.Printf("Server starting on localhost%s in %s mode\n", addr, cfg.Environment)
-	http.ListenAndServe(addr, r)
+	addr := fmt.Sprintf(":%s", "8080")
+	fmt.Printf("Server starting on localhost%s\n", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
