@@ -38,33 +38,51 @@ export function Analyzer({
   messages,
   ...props
 }: AnalyzerProps) {
+  const renderMessages = messages.slice(-3);
+
   return (
-    <Card className={cn("w-[380px]", className)} active={active} {...props}>
+    <Card
+      className={cn("w-[380px] overflow-hidden", className)}
+      active={active}
+      {...props}
+    >
       <CardHeader>
         <AgentTitle active={active}>Analyzer</AgentTitle>
         <CardDescription>
           Analyzes the website and generates scenarios.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 h-[350px]">
-        <div>
-          {messages.slice(-3).map((message, index) => (
+      <CardContent className="flex flex-col gap-4">
+        <div className="h-[300px] flex flex-col gap-1">
+          {renderMessages.map((message, index) => (
             <div
               key={index}
-              className="mb-4 flex flex-row items-start pb-4 last:mb-0 last:pb-0"
+              className={cn(
+                "mb-4 flex flex-col gap-1 items-start pb-4 last:mb-0 last:pb-0 transition-all duration-500",
+                index === renderMessages.length - 1
+                  ? "opacity-0 animate-fade-in blur-sm"
+                  : ""
+              )}
             >
-              <div className="space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {message.description}
-                </p>
-              </div>
+              <p className="text-sm font-medium leading-none">
+                {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
+              </p>
+              <p className="text-sm text-muted-foreground break-all">
+                {message.description.length > 150
+                  ? `${message.description.slice(0, 150)}...`
+                  : message.description}
+              </p>
             </div>
           ))}
         </div>
-        {active && <ShinyText text="Generating..." speed={2} />}
+        <ShinyText
+          className={cn(
+            "justify-self-end",
+            active ? "opacity-100" : "opacity-0"
+          )}
+          text="Generating..."
+          speed={2}
+        />
       </CardContent>
     </Card>
   );

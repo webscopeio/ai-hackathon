@@ -135,7 +135,7 @@ export default function WebSocketDemo() {
         </CardContent>
       </Card>
       <Analyzer
-        className="fixed top-1/2 left-[calc(50%-500px)] transform -translate-x-1/2 -translate-y-1/2"
+        className="fixed top-1/2 left-[calc(50%-450px)] transform -translate-x-1/2 -translate-y-1/2"
         active={true}
         messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
       />
