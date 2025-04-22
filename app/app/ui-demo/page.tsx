@@ -11,6 +11,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Analyzer } from "./analyzer";
 
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
@@ -175,6 +176,14 @@ export default function WebSocketDemo() {
           </div>
         </CardContent>
       </Card>
+      <Analyzer
+        className="fixed top-1/2 left-[calc(50%-500px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={true}
+      />
+      <Analyzer
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        active={false}
+      />
     </div>
   );
 }
