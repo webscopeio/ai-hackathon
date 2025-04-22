@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Analyzer } from "./analyzer";
+import { Message } from "@/lib/types";
 
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
@@ -22,49 +23,6 @@ export default function WebSocketDemo() {
 
   const addMessage = (message: string) => {
     setMessages((prev) => [...prev, message]);
-  };
-
-  const handleOpen = () => {
-    if (wsRef.current) return;
-
-    try {
-      console.log("Attempting to connect to WebSocket...");
-      wsRef.current = new WebSocket("ws://localhost:8080/ws");
-
-      wsRef.current.onopen = () => {
-        console.log("WebSocket connection opened successfully");
-        setIsConnected(true);
-        addMessage("OPEN");
-      };
-
-      wsRef.current.onclose = (event) => {
-        console.log("WebSocket connection closed:", event.code, event.reason);
-        setIsConnected(false);
-        addMessage(
-          `CLOSE (Code: ${event.code}${
-            event.reason ? `, Reason: ${event.reason}` : ""
-          })`
-        );
-        wsRef.current = null;
-      };
-
-      wsRef.current.onmessage = (evt) => {
-        console.log("Received message:", evt.data);
-        addMessage(`RESPONSE: ${evt.data}`);
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        addMessage(
-          `ERROR: Connection failed - check browser console for details`
-        );
-      };
-    } catch (error: any) {
-      console.error("WebSocket connection error:", error);
-      addMessage(
-        `ERROR: Failed to connect to WebSocket server - ${error.message}`
-      );
-    }
   };
 
   const handleClose = () => {
@@ -101,7 +59,7 @@ export default function WebSocketDemo() {
 
         wsRef.current.onmessage = (evt) => {
           console.log("Received message:", evt.data);
-          addMessage(`RESPONSE: ${evt.data}`);
+          addMessage(evt.data);
         };
 
         wsRef.current.onerror = (error) => {
@@ -179,11 +137,23 @@ export default function WebSocketDemo() {
       <Analyzer
         className="fixed top-1/2 left-[calc(50%-500px)] transform -translate-x-1/2 -translate-y-1/2"
         active={true}
+        messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
       />
       <Analyzer
         className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
         active={false}
+        messages={getMessages(messages, ["GENERATOR"])}
       />
     </div>
   );
 }
+
+const getMessages = (messages: string[], ids: string[]): Message[] => {
+  return messages
+    .filter((message) => ids.includes(message.split(" ")[0]))
+    .map((message) => {
+      const id = message.split(" ")[0];
+      const description = message.split(" ").slice(1).join(" ");
+      return { title: id, description };
+    });
+};

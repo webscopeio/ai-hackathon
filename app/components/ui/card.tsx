@@ -82,25 +82,6 @@ const CardFooter = React.forwardRef<
 ));
 CardFooter.displayName = "CardFooter";
 
-// Add the new animation
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes subtle-pulse {
-    0%, 100% {
-      border-color: rgb(59 130 246);
-      box-shadow: 0 0 15px rgba(59,130,246,0.5);
-    }
-    50% {
-      border-color: rgb(59 130 246 / 0.7);
-      box-shadow: 0 0 15px rgba(59,130,246,0.3);
-    }
-  }
-  .animate-pulse-subtle {
-    animation: subtle-pulse 3s ease-in-out infinite;
-  }
-`;
-document.head.appendChild(style);
-
 export {
   Card,
   CardHeader,

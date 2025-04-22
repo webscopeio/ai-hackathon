@@ -6,10 +6,11 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import { AgentTitle } from "@/components/agent";
+import { Message } from "@/lib/types";
+import ShinyText from "@/components/ShinyText";
 
 const notifications = [
   {
@@ -26,36 +27,44 @@ const notifications = [
   },
 ];
 
-type AnalyzerProps = React.ComponentProps<typeof Card> & { active: boolean };
+type AnalyzerProps = React.ComponentProps<typeof Card> & {
+  active: boolean;
+  messages: Message[];
+};
 
-export function Analyzer({ className, active, ...props }: AnalyzerProps) {
+export function Analyzer({
+  className,
+  active,
+  messages,
+  ...props
+}: AnalyzerProps) {
   return (
     <Card className={cn("w-[380px]", className)} active={active} {...props}>
       <CardHeader>
-        <CardTitle>Analyzer</CardTitle>
+        <AgentTitle active={active}>Analyzer</AgentTitle>
         <CardDescription>
           Analyzes the website and generates scenarios.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="flex flex-col gap-4 h-[350px]">
         <div>
-          {notifications.map((notification, index) => (
+          {messages.slice(-3).map((message, index) => (
             <div
               key={index}
-              className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
+              className="mb-4 flex flex-row items-start pb-4 last:mb-0 last:pb-0"
             >
-              <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {notification.title}
+                  {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {notification.description}
+                  {message.description}
                 </p>
               </div>
             </div>
           ))}
         </div>
+        {active && <ShinyText text="Generating..." speed={2} />}
       </CardContent>
     </Card>
   );
