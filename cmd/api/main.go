@@ -56,7 +56,6 @@ func runPipeline(w http.ResponseWriter, r *http.Request) {
 			}
 			log.Printf("recv: %s", message)
 			// Send confirmation message back to client
-			err = c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("ANALYZER 'Prompt recieved, starting analysis...'")))
 			if err != nil {
 				log.Printf("error writing message: %v", err)
 				return

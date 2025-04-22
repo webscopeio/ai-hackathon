@@ -1,7 +1,4 @@
-import { BellRing, Check } from "lucide-react";
-
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,8 +35,6 @@ export function Analyzer({
   messages,
   ...props
 }: AnalyzerProps) {
-  const renderMessages = messages.slice(-3);
-
   return (
     <Card
       className={cn("w-[380px] overflow-hidden", className)}
@@ -53,27 +48,28 @@ export function Analyzer({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="h-[300px] flex flex-col gap-1">
-          {renderMessages.map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                "mb-4 flex flex-col gap-1 items-start pb-4 last:mb-0 last:pb-0 transition-all duration-500",
-                index === renderMessages.length - 1
-                  ? "opacity-0 animate-fade-in blur-sm"
-                  : ""
-              )}
-            >
-              <p className="text-sm font-medium leading-none">
-                {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
-              </p>
-              <p className="text-sm text-muted-foreground break-all">
-                {message.description.length > 150
-                  ? `${message.description.slice(0, 150)}...`
-                  : message.description}
-              </p>
-            </div>
-          ))}
+        <div className="h-[300px] overflow-hidden relative">
+          <div className="absolute bottom-0 w-full flex flex-col gap-1">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "mb-4 flex flex-col gap-1 items-start pb-4 last:mb-0 last:pb-0 transition-all duration-500 opacity-0",
+                  "animate-fade-in blur-sm"
+                )}
+              >
+                <p className="text-sm font-medium leading-none">
+                  {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
+                </p>
+                <p className="text-sm text-muted-foreground break-all">
+                  {message.description.length > 150
+                    ? `${message.description.slice(0, 150)}...`
+                    : message.description}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="absolute top-0 w-full h-[52px] bg-gradient-to-b from-background to-transparent" />
         </div>
         <ShinyText
           className={cn(
