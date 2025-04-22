@@ -164,7 +164,7 @@ export default function WebSocketDemo() {
             </div>
             <div
               ref={scrollAreaRef}
-              className="h-[300px] overflow-y-auto border rounded-md p-4 bg-muted/10"
+              className="h-[200px] overflow-y-auto border rounded-md p-4 bg-muted/10"
             >
               {messages.map((message, index) => (
                 <div key={index} className="py-1 font-mono text-sm">

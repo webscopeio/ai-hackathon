@@ -21,5 +21,5 @@ func RegisterRoutes(r *chi.Mux, cfg *config.Config, llm *llm.Client) {
 	r.Post("/config", handlers.SaveConfig())
 
 	// Analyze endpoints
-	r.Post("/analyze", handlers.Analyze(cfg, llm))
+	// r.Post("/analyze", handlers.Analyze(cfg, llm))
 }

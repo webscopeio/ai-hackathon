@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/config"
@@ -28,27 +29,57 @@ var upgrader = websocket.Upgrader{
 
 func runPipeline(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
-
 	if err != nil {
 		log.Print("upgrade:", err)
 		return
 	}
 	defer c.Close()
-	for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			break
+
+	// Create a cancellable context
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Create a WaitGroup to wait for sendMessage to complete
+	var wg sync.WaitGroup
+
+	// Channel to signal connection closure
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for {
+			mt, message, err := c.ReadMessage()
+			if err != nil {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("error reading message: %v", err)
+				}
+				return
+			}
+			log.Printf("recv: %s", message)
+			// Send confirmation message back to client
+			err = c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("ANALYZER 'Prompt recieved, starting analysis...'")))
+			if err != nil {
+				log.Printf("error writing message: %v", err)
+				return
+			}
+
+			// Start sendMessage in a goroutine
+			wg.Add(1)
+			go func(msg []byte) {
+				defer wg.Done()
+				sendMessage(ctx, c, mt, string(msg))
+			}(message)
 		}
-		log.Printf("recv: %s", message)
-		sendMessage(c, mt, string(message))
-	}
+	}()
+
+	// Wait for either the connection to close or the context to be cancelled
+	<-done
+	cancel() // Cancel the context to stop any ongoing operations
+
+	// Wait for any ongoing sendMessage operations to complete
+	wg.Wait()
 }
 
-func sendMessage(c *websocket.Conn, mt int, prompt string) {
-	// Add context
-	ctx := context.Background()
-
+func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 	// Initialize config and LLM client
 	cfg := config.Load()
 	client := llm.New(cfg)
@@ -86,40 +117,61 @@ func sendMessage(c *websocket.Conn, mt int, prompt string) {
 		SCENARIO: Verify users can search for products and get relevant results
 		EXPECTED: Search results page should display matching products with correct information`
 
-	basePrompt += `\n\IMPORTANT: This is the input from the user. Use it to generate the test criteria:` + prompt
+	// Check if context is cancelled before proceeding
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
 
-	analysis, err := analyzer.Analyze(ctx, cfg, client, "https://ai-hackathon-demo-delta.vercel.app/", basePrompt)
+	analysis, err := analyzer.Analyze(ctx, cfg, client, url, basePrompt, c, mt)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		log.Printf("Error: %v\n", err)
 		return
 	}
 
 	if len(analysis.Criteria) == 0 {
-		fmt.Println("Error: No test criteria were generated from the analysis")
+		log.Println("Error: No test criteria were generated from the analysis")
 		return
 	}
 
 	// Split criteria by double newlines
 	criteria := strings.Split(analysis.Criteria, "\n\n")
 
-	c.WriteMessage(mt, []byte(fmt.Sprintf("\n[MAIN FLOW] Analyzer generated %d scenarios\n", len(criteria))))
-	// print the criteria line by line
+	// Check context before sending message
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		if err := c.WriteMessage(mt, []byte(fmt.Sprintf("\n[MAIN FLOW] Analyzer generated %d scenarios\n", len(criteria)))); err != nil {
+			log.Printf("error writing message: %v", err)
+			return
+		}
+	}
+
 	logger.Debug("CRITERIA LENGTH: %d", len(criteria))
-	for _, c := range criteria {
-		logger.Debug("CRITERIA: %s", c)
+	for _, criterion := range criteria {
+		logger.Debug("CRITERIA: %s", criterion)
 	}
 
 	noOfLoops := 6
 
-	for i, c := range criteria {
-		fmt.Printf("\n[MAIN FLOW] Generating test for scenario %d: %s\n", i, c)
+	for i, criterion := range criteria {
+		// Check context before each iteration
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		fmt.Printf("\n[MAIN FLOW] Generating test for scenario %d: %s\n", i, criterion)
 		filename, err := gen_eval_loop.GenEvalLoop(ctx, client, &models.AnalyzerReturn{
 			TechSpec:   analysis.TechSpec,
 			ContentMap: analysis.ContentMap,
 			Criteria:   analysis.Criteria,
 		}, i+1, noOfLoops)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
+			log.Printf("Error: %v\n", err)
 			return
 		}
 
@@ -130,12 +182,10 @@ func sendMessage(c *websocket.Conn, mt int, prompt string) {
 		fmt.Printf("\n[MAIN FLOW] Writing generated test file to %s\n", destPath)
 		err = os.Rename(filename, destPath)
 		if err != nil {
-			fmt.Printf("Error copying file: %v\n", err)
+			log.Printf("Error copying file: %v\n", err)
 			return
 		}
 	}
-
-	return
 }
 
 func main() {

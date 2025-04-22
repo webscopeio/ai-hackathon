@@ -7,13 +7,14 @@ import (
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr string, prompt string) (*models.AnalyzerReturn, error) {
+func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr string, prompt string, c *websocket.Conn, mt int) (*models.AnalyzerReturn, error) {
 	userMessage := fmt.Sprintf("The website is: %s - %s", urlStr, prompt)
 	messages := []anthropic.MessageParam{
 		anthropic.NewUserMessage(anthropic.NewTextBlock(userMessage)),
@@ -47,6 +48,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 	var contentMap map[string]string
 
 	fmt.Println("\n[ANALYZER] User Message: \n\n", userMessage)
+	c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'Starting analyisis on %s...'", urlStr)))
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
@@ -64,9 +66,11 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 			switch block := block.AsAny().(type) {
 			case anthropic.TextBlock:
 				fmt.Printf("\n[ANALYZER] Agent response: \n\n%s\n", block.Text)
+				c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER '%s'", block.Text)))
 			case anthropic.ToolUseBlock:
 				inputJSON, _ := json.Marshal(block.Input)
 				fmt.Printf("\n[ANALYZER] Tool call: \n\n%s\n", block.Name+": "+string(inputJSON))
+				c.WriteMessage(mt, []byte(fmt.Sprintf("TOOLCALL '%s: %s'", block.Name, string(inputJSON))))
 			}
 		}
 
