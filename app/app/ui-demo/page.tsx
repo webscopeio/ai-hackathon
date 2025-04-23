@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -13,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Analyzer } from "./analyzer";
 import { Message } from "@/lib/types";
+import { Generator } from "./generator";
 
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
@@ -139,7 +139,7 @@ export default function WebSocketDemo() {
         active={true}
         messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
       />
-      <Analyzer
+      <Generator
         className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
         active={false}
         messages={getMessages(messages, ["GENERATOR"])}

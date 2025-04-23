@@ -9,17 +9,17 @@ import { AgentTitle } from "@/components/agent";
 import { Message } from "@/lib/types";
 import ShinyText from "@/components/ShinyText";
 
-type AnalyzerProps = React.ComponentProps<typeof Card> & {
+type GeneratorProps = React.ComponentProps<typeof Card> & {
   active: boolean;
   messages: Message[];
 };
 
-export function Analyzer({
+export function Generator({
   className,
   active,
   messages,
   ...props
-}: AnalyzerProps) {
+}: GeneratorProps) {
   return (
     <Card
       className={cn("w-[380px] overflow-hidden", className)}
@@ -27,9 +27,9 @@ export function Analyzer({
       {...props}
     >
       <CardHeader>
-        <AgentTitle active={active}>Analyzer</AgentTitle>
+        <AgentTitle active={active}>Generator</AgentTitle>
         <CardDescription>
-          Analyzes the website and generates scenarios.
+          Generates end-to-end tests based on provided scenarios.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -44,7 +44,7 @@ export function Analyzer({
                 )}
               >
                 <p className="text-sm font-medium leading-none">
-                  {message.title === "ANALYZER" ? "Agent" : "Toolcall"}
+                  {message.title === "GENERATOR" ? "Agent" : "Toolcall"}
                 </p>
                 <p className="text-sm text-muted-foreground break-all">
                   {message.description.length > 150
