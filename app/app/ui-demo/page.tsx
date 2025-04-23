@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Analyzer } from "./analyzer";
 import { Message } from "@/lib/types";
 import { Generator } from "./generator";
+import { Agent } from "@/components/agent";
 
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
@@ -134,7 +135,9 @@ export default function WebSocketDemo() {
           </div>
         </CardContent>
       </Card>
-      <Analyzer
+      <Agent
+        title="Analyzer"
+        description="Analyzes the website and generates scenarios."
         className="fixed top-1/2 left-[calc(50%-450px)] transform -translate-x-1/2 -translate-y-1/2"
         active={true}
         messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
@@ -149,11 +152,12 @@ export default function WebSocketDemo() {
 }
 
 const getMessages = (messages: string[], ids: string[]): Message[] => {
+  const agentName = ids[0];
   return messages
     .filter((message) => ids.includes(message.split(" ")[0]))
     .map((message) => {
       const id = message.split(" ")[0];
       const description = message.split(" ").slice(1).join(" ");
-      return { title: id, description };
+      return { title: id === agentName ? "Agent" : "Toolcall", description };
     });
 };

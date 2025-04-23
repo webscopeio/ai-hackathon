@@ -1,30 +1,77 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
-import { CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
+import { AgentTitle } from "@/components/agent-title";
+import { Message } from "@/lib/types";
+import ShinyText from "@/components/ShinyText";
 
-type AgentTitleProps = React.ComponentProps<typeof CardTitle> & {
-  active?: boolean;
+type AgentProps = React.ComponentProps<typeof Card> & {
+  active: boolean;
+  messages: Message[];
+  title: string;
+  description: string;
 };
 
-export function AgentTitle({
+export function Agent({
   className,
   active,
-  children,
+  messages,
+  title,
+  description,
   ...props
-}: AgentTitleProps) {
+}: AgentProps) {
   return (
-    <div className="flex items-center gap-3">
-      <span
-        className={cn(
-          "block h-2 w-2 rounded-full transition-all duration-200",
-          active
-            ? ["bg-blue-500", "shadow-[0_0_12px_4px_rgba(59,130,246,0.7)]"]
-            : "bg-gray-400"
-        )}
-      />
-      <CardTitle className={className} {...props}>
-        {children}
-      </CardTitle>
-    </div>
+    <Card
+      className={cn("w-[380px] overflow-hidden", className)}
+      active={active}
+      {...props}
+    >
+      <CardHeader>
+        <AgentTitle active={active}>{title}</AgentTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="h-[300px] overflow-hidden relative">
+          <div className="absolute bottom-0 w-full flex flex-col gap-1">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "mb-4 flex flex-col gap-1 items-start pb-4 last:mb-0 last:pb-0 transition-all duration-500 opacity-0",
+                  "animate-fade-in blur-sm"
+                )}
+              >
+                <p className="text-sm font-medium leading-none capitalize">
+                  {message.title}
+                </p>
+                <p className="text-sm text-muted-foreground break-all">
+                  {message.description.length > 150
+                    ? `${message.description.slice(0, 150)}...`
+                    : message.description}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div
+            className={cn(
+              "absolute top-0 w-full h-[52px] bg-gradient-to-b from-background to-transparent",
+              active && "from-blue-50/30"
+            )}
+          />
+        </div>
+        <ShinyText
+          className={cn(
+            "justify-self-end",
+            active ? "opacity-100" : "opacity-0"
+          )}
+          text="Generating..."
+          speed={2}
+        />
+      </CardContent>
+    </Card>
   );
 }

@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { AgentTitle } from "@/components/agent";
+import { AgentTitle } from "@/components/agent-title";
 import { Message } from "@/lib/types";
 import ShinyText from "@/components/ShinyText";
 
