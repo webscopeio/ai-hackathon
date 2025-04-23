@@ -103,8 +103,8 @@ export default function WebSocketDemo() {
   }, [messages]);
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <Card>
+    <div className="container mx-auto p-6">
+      <Card className="w-4xl mx-auto mb-12">
         <CardHeader className="pb-0">
           <CardTitle>End-to-end Test Generation</CardTitle>
           <CardDescription>
@@ -140,52 +140,51 @@ export default function WebSocketDemo() {
           </div>
         </CardContent>
       </Card>
-      <Agent
-        title="Analyzer"
-        description="Analyzes the website and generates scenarios."
-        className="fixed top-[calc(50%-250px)] left-[calc(50%-450px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={
-          isActive(messages, "ANALYZER") || isActive(messages, "TOOLCALL")
-        }
-        messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
-      />
-      <Agent
-        title="Generator"
-        description="Generates end-to-end test from scenarios."
-        className="fixed top-[calc(50%-250px)] left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        active={isActive(messages, "GENERATOR")}
-        messages={getMessages(messages, ["GENERATOR"])}
-      />
-      <Agent
-        title="Evaluator"
-        description="Evaluates the generated end-to-end test."
-        className="fixed top-[calc(50%-250px)] left-[calc(50%+450px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={isActive(messages, "EVALUATOR")}
-        messages={getMessages(messages, ["EVALUATOR"])}
-      />
-      <Tool
-        title="get_sitemap_tool"
-        description="Gets the content of the website."
-        className="fixed top-[calc(50%+200px)] left-[calc(50%-620px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={isActive(messages, "GET_SITEMAP_TOOL")}
-        messages={getMessages(messages, ["GET_SITEMAP_TOOL"])}
-      />
-      <Tool
-        title="get_content_tool"
-        description="Gets the content of passed urls."
-        className="fixed top-[calc(50%+200px)] left-[calc(50%-280px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={isActive(messages, "GET_CONTENT_TOOL")}
-        messages={getMessages(messages, ["GET_CONTENT_TOOL"])}
-      />
-      <Tool
-        title="run_test_tool"
-        description="Runs the generated end-to-end test."
-        className="fixed top-[calc(50%+200px)] left-[calc(50%+450px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={isActive(messages, "RUN_TEST_TOOL")}
-        messages={getMessages(messages, ["RUN_TEST_TOOL"])}
-      />
+      <div className="flex flex-row gap-8 justify-center">
+        <Agent
+          title="Analyzer"
+          description="Analyzes the website and generates scenarios."
+          active={
+            isActive(messages, "ANALYZER") || isActive(messages, "TOOLCALL")
+          }
+          messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
+        />
+        <Agent
+          title="Generator"
+          description="Generates end-to-end test from scenarios."
+          active={isActive(messages, "GENERATOR")}
+          messages={getMessages(messages, ["GENERATOR"])}
+        />
+        <Agent
+          title="Evaluator"
+          description="Evaluates the generated end-to-end test."
+          active={isActive(messages, "EVALUATOR")}
+          messages={getMessages(messages, ["EVALUATOR"])}
+        />
+      </div>
+      <div className="flex flex-row gap-8 justify-center pt-16">
+        <Tool
+          title="get_sitemap_tool"
+          description="Gets the content of the website."
+          active={isActive(messages, "GET_SITEMAP_TOOL")}
+          messages={getMessages(messages, ["GET_SITEMAP_TOOL"])}
+        />
+        <Tool
+          title="get_content_tool"
+          description="Gets the content of passed urls."
+          active={isActive(messages, "GET_CONTENT_TOOL")}
+          messages={getMessages(messages, ["GET_CONTENT_TOOL"])}
+        />
+        <div className="w-[470px]"></div>
+        <Tool
+          title="run_test_tool"
+          description="Runs the generated end-to-end test."
+          active={isActive(messages, "RUN_TEST_TOOL")}
+          messages={getMessages(messages, ["RUN_TEST_TOOL"])}
+        />
+      </div>
       <TestFiles
-        className="fixed top-[calc(50%+500px)] left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        className="pt-24"
         count={scenarioCount}
         names={fileNames}
         scenario={scenario}

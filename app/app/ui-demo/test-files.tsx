@@ -23,7 +23,7 @@ export function TestFiles({
         <h2 className="text-lg font-bold pb-1">Scenario {names.length + 1}:</h2>
         <p className="text-sm whitespace-pre-wrap">{scenario}</p>
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col w-[500px]">
         <h2 className="text-lg font-bold pb-1">Generated test files:</h2>
         {Array.from({ length: count }).map((_, index) => {
           const fileName = names[index];
