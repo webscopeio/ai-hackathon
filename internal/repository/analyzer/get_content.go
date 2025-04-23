@@ -12,6 +12,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly/v2"
+	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
@@ -129,10 +130,12 @@ func GetContent_OLD(ctx context.Context, urls []string) (*models.GetContentToolR
 
 // GetContentCdp uses Chrome DevTools Protocol via chromedp to fetch content from URLs
 // This is especially useful for SPAs and JavaScript-heavy websites
-func GetContent(ctx context.Context, urls []string) (*models.GetContentToolReturn, error) {
+func GetContent(ctx context.Context, urls []string, c *websocket.Conn, mt int) (*models.GetContentToolReturn, error) {
 	if len(urls) == 0 {
 		return nil, errors.New("empty URLs list provided")
 	}
+
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GET_CONTENT_TOOL 'Getting content for %d URLs'", len(urls))))
 
 	// Validate and normalize URLs
 	validatedUrls := make([]string, 0, len(urls))
@@ -153,6 +156,7 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 		parsedURL, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Printf("Warning: Could not parse URL %s: %v\n", urlStr, err)
+			c.WriteMessage(mt, []byte(fmt.Sprintf("GET_CONTENT_TOOL 'Warning: Could not parse URL %s: %v'", urlStr, err)))
 			continue
 		}
 
@@ -184,46 +188,47 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 		// Create a timeout context for each URL
 		urlCtx, urlCancel := context.WithTimeout(browserCtx, 30*time.Second)
 		defer urlCancel()
-		
+
 		// Variable to store the body content
 		var bodyHTML string
-		
+
 		// Navigate to the URL and capture the body content
 		err := chromedp.Run(urlCtx,
 			// Navigate to the URL
 			chromedp.Navigate(urlStr),
-			
+
 			// Wait for the page to be fully loaded
 			chromedp.WaitReady("body", chromedp.ByQuery),
-			
+
 			// Optional: Wait some extra time for dynamic content
 			chromedp.Sleep(1*time.Second),
-			
+
 			// Capture the HTML content
 			chromedp.OuterHTML("body", &bodyHTML, chromedp.ByQuery),
-		)		
-		
+		)
+
 		if err != nil {
 			fmt.Printf("Error fetching %s with chromedp: %v\n", urlStr, err)
-			
+			c.WriteMessage(mt, []byte(fmt.Sprintf("GET_CONTENT_TOOL 'Error fetching %s with chromedp: %v'", urlStr, err)))
 			// Store empty string for failed URLs
 			mutex.Lock()
 			results[urlStr] = ""
 			mutex.Unlock()
 			continue
 		}
-		
+
 		// Clean the HTML content
 		for _, regex := range cleaningRegexes {
 			bodyHTML = regex.ReplaceAllString(bodyHTML, "")
 		}
-		
+
 		// Store the result
 		mutex.Lock()
 		results[urlStr] = bodyHTML
 		mutex.Unlock()
-		
-		fmt.Printf("Successfully fetched %s with chromedp\n", urlStr)
+
+		fmt.Printf("Fetched %s with chromedp\n", urlStr)
+		c.WriteMessage(mt, []byte(fmt.Sprintf("GET_CONTENT_TOOL 'Fetched %s with chromedp'", urlStr)))
 	}
 
 	// Check if we got any results
@@ -232,7 +237,7 @@ func GetContent(ctx context.Context, urls []string) (*models.GetContentToolRetur
 	}
 
 	fmt.Printf("Results are ready, found data for %d URLs\n", len(results))
-
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GET_CONTENT_TOOL 'Results are ready, returning to Agent.'")))
 	return &models.GetContentToolReturn{
 		Contents: results,
 	}, nil

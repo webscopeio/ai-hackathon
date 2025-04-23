@@ -90,10 +90,11 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					response, err = GetSitemap(ctx, input.BaseUrl)
+					response, err = GetSitemap(ctx, input.BaseUrl, c, mt)
 					if err != nil {
 						return nil, err
 					}
+					c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'I got the sitemap'")))
 				case getContentTool.Name:
 					input := models.GetContentTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
@@ -101,12 +102,13 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					result, err := GetContent(ctx, input.Urls)
+					result, err := GetContent(ctx, input.Urls, c, mt)
 					if err != nil {
 						return nil, err
 					}
 					contentMap = result.Contents
 					response = result
+					c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'I got the content'")))
 				case sentryTool.Name:
 					input := models.SentryTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
@@ -135,7 +137,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					logger.Debug("FROM ANALYZE: Final contentMap: %s", input.ContentMap)
 
 					return &models.AnalyzerReturn{
-						TechSpec:   prompt,
+						TechSpec:   "",
 						ContentMap: contentMap,
 						Criteria:   input.Criteria,
 					}, nil

@@ -142,11 +142,13 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 	case <-ctx.Done():
 		return
 	default:
-		if err := c.WriteMessage(mt, []byte(fmt.Sprintf("\n[MAIN FLOW] Analyzer generated %d scenarios\n", len(criteria)))); err != nil {
+		if err := c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'Generated %d scenarios, passing to Generator.'", len(criteria)))); err != nil {
 			log.Printf("error writing message: %v", err)
 			return
 		}
 	}
+
+	c.WriteMessage(mt, []byte(fmt.Sprintf("SCENARIOS %d", len(criteria))))
 
 	logger.Debug("CRITERIA LENGTH: %d", len(criteria))
 	for _, criterion := range criteria {
@@ -163,18 +165,27 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 		default:
 		}
 
+		keys := make([]string, 0, len(analysis.ContentMap))
+		for k := range analysis.ContentMap {
+			keys = append(keys, k)
+		}
+		c.WriteMessage(mt, []byte(fmt.Sprintf("SCENARIO %s\n\nContent of these sites is passed to the generator: %s", criterion, strings.Join(keys, ", "))))
+
 		fmt.Printf("\n[MAIN FLOW] Generating test for scenario %d: %s\n", i, criterion)
+		c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Generating test for scenario %d: %s'", i, criterion)))
 		filename, err := gen_eval_loop.GenEvalLoop(ctx, client, &models.AnalyzerReturn{
-			TechSpec:   analysis.TechSpec,
+			TechSpec:   url,
 			ContentMap: analysis.ContentMap,
 			Criteria:   analysis.Criteria,
-		}, i+1, noOfLoops)
+		}, i+1, noOfLoops, c, mt)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return
 		}
 
 		logger.Debug("[MAIN FLOW] Writing test file: %s\n", filepath.Base(filename))
+		c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Writing test file: %s'", filepath.Base(filename))))
+		c.WriteMessage(mt, []byte(fmt.Sprintf("FILENAME %s", filepath.Base(filename))))
 
 		// copy the file to the current directory
 		destPath := filepath.Join("./__generated__", filepath.Base(filename))
@@ -185,6 +196,7 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 			return
 		}
 	}
+	c.WriteMessage(mt, []byte(fmt.Sprintf("FINAL_MESSAGE 'Tests are generated.'")))
 }
 
 func main() {

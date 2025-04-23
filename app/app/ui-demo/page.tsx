@@ -10,14 +10,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Analyzer } from "./analyzer";
 import { Message } from "@/lib/types";
-import { Generator } from "./generator";
 import { Agent } from "@/components/agent";
-
+import { Tool } from "@/components/tool";
+import { TestFiles } from "./test-files";
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
+  const [scenarioCount, setScenarioCount] = useState<number>(0);
+  const [fileNames, setFileNames] = useState<string[]>([]);
+  const [scenario, setScenario] = useState<string>("");
+  const [inputValue, setInputValue] = useState("jakub.kr");
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -41,7 +43,7 @@ export default function WebSocketDemo() {
           console.log("WebSocket connection opened successfully");
           setIsConnected(true);
           addMessage("OPEN");
-          addMessage(`SEND: ${inputValue}`);
+          addMessage(`SEND '${inputValue}'`);
           if (wsRef.current) {
             wsRef.current.send(inputValue);
           }
@@ -51,28 +53,41 @@ export default function WebSocketDemo() {
           console.log("WebSocket connection closed:", event.code, event.reason);
           setIsConnected(false);
           addMessage(
-            `CLOSE (Code: ${event.code}${
+            `CLOSE '${event.code}${
               event.reason ? `, Reason: ${event.reason}` : ""
-            })`
+            }'`
           );
           wsRef.current = null;
         };
 
         wsRef.current.onmessage = (evt) => {
-          console.log("Received message:", evt.data);
+          console.log(evt.data);
           addMessage(evt.data);
+          const id = evt.data.split(" ")[0];
+          if (id === "SCENARIOS") {
+            const numScenarios = parseInt(evt.data.split(" ")[1]);
+            setScenarioCount(numScenarios);
+          }
+          if (id === "FILENAME") {
+            const fileName = evt.data.split(" ")[1];
+            setFileNames((prev) => [...prev, fileName]);
+          }
+          if (id === "SCENARIO") {
+            const scenario = evt.data.substring(evt.data.indexOf(" ") + 1);
+            setScenario(scenario);
+          }
         };
 
         wsRef.current.onerror = (error) => {
           console.error("WebSocket error:", error);
           addMessage(
-            `ERROR: Connection failed - check browser console for details`
+            `ERROR 'Connection failed - check browser console for details'`
           );
         };
       } catch (error: any) {
         console.error("WebSocket connection error:", error);
         addMessage(
-          `ERROR: Failed to connect to WebSocket server - ${error.message}`
+          `ERROR 'Failed to connect to WebSocket server - ${error.message}'`
         );
       }
       return;
@@ -90,7 +105,7 @@ export default function WebSocketDemo() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-0">
           <CardTitle>End-to-end Test Generation</CardTitle>
           <CardDescription>
             Generate end-to-end tests that are passing with just a prompt and
@@ -122,34 +137,68 @@ export default function WebSocketDemo() {
                 </div>
               </div>
             </div>
-            <div
-              ref={scrollAreaRef}
-              className="h-[200px] overflow-y-auto border rounded-md p-4 bg-muted/10"
-            >
-              {messages.map((message, index) => (
-                <div key={index} className="py-1 font-mono text-sm">
-                  {message}
-                </div>
-              ))}
-            </div>
           </div>
         </CardContent>
       </Card>
       <Agent
         title="Analyzer"
         description="Analyzes the website and generates scenarios."
-        className="fixed top-1/2 left-[calc(50%-450px)] transform -translate-x-1/2 -translate-y-1/2"
-        active={true}
+        className="fixed top-[calc(50%-250px)] left-[calc(50%-450px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={
+          isActive(messages, "ANALYZER") || isActive(messages, "TOOLCALL")
+        }
         messages={getMessages(messages, ["ANALYZER", "TOOLCALL"])}
       />
-      <Generator
-        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        active={false}
+      <Agent
+        title="Generator"
+        description="Generates end-to-end test from scenarios."
+        className="fixed top-[calc(50%-250px)] left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        active={isActive(messages, "GENERATOR")}
         messages={getMessages(messages, ["GENERATOR"])}
+      />
+      <Agent
+        title="Evaluator"
+        description="Evaluates the generated end-to-end test."
+        className="fixed top-[calc(50%-250px)] left-[calc(50%+450px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={isActive(messages, "EVALUATOR")}
+        messages={getMessages(messages, ["EVALUATOR"])}
+      />
+      <Tool
+        title="get_sitemap_tool"
+        description="Gets the content of the website."
+        className="fixed top-[calc(50%+200px)] left-[calc(50%-620px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={isActive(messages, "GET_SITEMAP_TOOL")}
+        messages={getMessages(messages, ["GET_SITEMAP_TOOL"])}
+      />
+      <Tool
+        title="get_content_tool"
+        description="Gets the content of passed urls."
+        className="fixed top-[calc(50%+200px)] left-[calc(50%-280px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={isActive(messages, "GET_CONTENT_TOOL")}
+        messages={getMessages(messages, ["GET_CONTENT_TOOL"])}
+      />
+      <Tool
+        title="run_test_tool"
+        description="Runs the generated end-to-end test."
+        className="fixed top-[calc(50%+200px)] left-[calc(50%+450px)] transform -translate-x-1/2 -translate-y-1/2"
+        active={isActive(messages, "RUN_TEST_TOOL")}
+        messages={getMessages(messages, ["RUN_TEST_TOOL"])}
+      />
+      <TestFiles
+        className="fixed top-[calc(50%+500px)] left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        count={scenarioCount}
+        names={fileNames}
+        scenario={scenario}
       />
     </div>
   );
 }
+
+const isActive = (messages: string[], id: string): boolean => {
+  return (
+    messages.length > 0 && messages[messages.length - 1].split(" ")[0] === id
+  );
+};
 
 const getMessages = (messages: string[], ids: string[]): Message[] => {
   const agentName = ids[0];
