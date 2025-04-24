@@ -14,11 +14,13 @@ import { Message } from "@/lib/types";
 import { Agent } from "@/components/agent";
 import { Tool } from "@/components/tool";
 import { TestFiles } from "./test-files";
+import Feedback from "./feedback";
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
   const [scenarioCount, setScenarioCount] = useState<number>(0);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [scenario, setScenario] = useState<string>("");
+  const [feedback, setFeedback] = useState<string>("");
   const [inputValue, setInputValue] = useState(
     "https://ai-hackathon-demo-delta.vercel.app/"
   );
@@ -77,6 +79,10 @@ export default function WebSocketDemo() {
           if (id === "SCENARIO") {
             const scenario = evt.data.substring(evt.data.indexOf(" ") + 1);
             setScenario(scenario);
+          }
+          if (id === "FEEDBACK") {
+            const feedback = evt.data.substring(evt.data.indexOf(" ") + 1);
+            setFeedback(feedback);
           }
         };
 
@@ -177,7 +183,9 @@ export default function WebSocketDemo() {
           active={isActive(messages, "GET_CONTENT_TOOL")}
           messages={getMessages(messages, ["GET_CONTENT_TOOL"])}
         />
-        <div className="w-[470px]"></div>
+        <div className="w-[470px]">
+          <Feedback feedback={feedback} />
+        </div>
         <Tool
           title="run_test_tool"
           description="Runs the generated end-to-end test."

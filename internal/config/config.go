@@ -17,6 +17,7 @@ type Config struct {
 	UmamiURL        string
 	UmamiAPIKey     string
 	UmamiWebsiteId  string
+	UseSonnet       bool
 }
 
 func Load() *Config {
@@ -28,6 +29,7 @@ func Load() *Config {
 		UmamiURL:        "https://api.umami.is/v1",
 		UmamiAPIKey:     "",
 		UmamiWebsiteId:  "",
+		UseSonnet:       false,
 	}
 
 	workDir, _ := os.Getwd()
@@ -61,6 +63,10 @@ func Load() *Config {
 
 	if apiKey := envMap["API_KEY"]; strings.TrimSpace(apiKey) != "" {
 		cfg.APIKey = apiKey
+	}
+
+	if UseSonnet := envMap["USE_SONNET"]; strings.TrimSpace(UseSonnet) != "" {
+		cfg.UseSonnet = UseSonnet == "true"
 	}
 
 	if sentryAuthToken := envMap["SENTRY_AUTH_TOKEN"]; strings.TrimSpace(sentryAuthToken) != "" {

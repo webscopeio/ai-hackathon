@@ -32,7 +32,9 @@ export function Agent({
     >
       <CardHeader>
         <AgentTitle active={active}>{title}</AgentTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>
+          {description + "\nClaude 3.5 Sonnet based Agent."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="h-[300px] overflow-hidden relative">

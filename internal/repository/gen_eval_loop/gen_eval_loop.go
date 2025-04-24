@@ -299,6 +299,7 @@ Invalid formatting will cause errors in processing your response.
 	fmt.Printf("[EVALUATOR] Evaluator rejected the test file ❌\n")
 	fmt.Printf("[EVALUATOR] With the following feedback:\n\n %s\n", response.Feedback)
 	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'REJECTED, feedback for generator:\n\n %s'", response.Feedback)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("FEEDBACK %s", response.Feedback)))
 	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Passing the feedback to the generator.'")))
 
 	return response.Feedback, false, nil

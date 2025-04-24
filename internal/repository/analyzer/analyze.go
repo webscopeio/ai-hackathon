@@ -28,7 +28,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
-		*sentryTool,
+		// *sentryTool,
 		{
 			Name:        "get_significant_user_flows",
 			Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
@@ -49,10 +49,11 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 
 	fmt.Println("\n[ANALYZER] User Message: \n\n", userMessage)
 	c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'Starting analyisis on %s...'", urlStr)))
+	fmt.Printf("MODEL: %s\n", client.Model)
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
-			Model:     anthropic.ModelClaude3_5SonnetLatest,
+			Model:     client.Model,
 			MaxTokens: 2048,
 			Messages:  messages,
 			Tools:     tools,
