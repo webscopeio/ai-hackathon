@@ -49,8 +49,8 @@ export function Agent({
                   {message.title}
                 </p>
                 <p className="text-sm text-muted-foreground break-all">
-                  {message.description.length > 150
-                    ? `${message.description.slice(0, 150)}...`
+                  {message.description.length > 250
+                    ? `${message.description.slice(0, 250)}...`
                     : message.description}
                 </p>
               </div>

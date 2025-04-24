@@ -156,6 +156,7 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 	}
 
 	noOfLoops := 6
+	filenames := []string{}
 
 	for i, criterion := range criteria {
 		// Check context before each iteration
@@ -177,7 +178,7 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 			TechSpec:   url,
 			ContentMap: analysis.ContentMap,
 			Criteria:   analysis.Criteria,
-		}, i+1, noOfLoops, c, mt)
+		}, i+1, noOfLoops, filenames, c, mt)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return
@@ -186,6 +187,9 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 		logger.Debug("[MAIN FLOW] Writing test file: %s\n", filepath.Base(filename))
 		c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Writing test file: %s'", filepath.Base(filename))))
 		c.WriteMessage(mt, []byte(fmt.Sprintf("FILENAME %s", filepath.Base(filename))))
+		testFileName := filepath.Base(filename)[7:]
+		filenames = append(filenames, testFileName)
+		logger.Debug("[MAIN FLOW] Updated filenames: %v", filenames)
 
 		// copy the file to the current directory
 		destPath := filepath.Join("./__generated__", filepath.Base(filename))

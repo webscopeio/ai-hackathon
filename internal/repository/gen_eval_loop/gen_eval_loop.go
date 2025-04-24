@@ -17,7 +17,7 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int, c *websocket.Conn, mt int) (string, error) {
+func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int, filenames []string, c *websocket.Conn, mt int) (string, error) {
 	tempDir, testsDir, err := SetupTestEnvironment(ctx)
 	if err != nil {
 		return "", fmt.Errorf("SetupTestEnvironment failed: %w", err)
@@ -33,7 +33,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 		if loopCount > noOfLoops {
 			return filename, nil
 		}
-		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index, c, mt)
+		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index, filenames, c, mt)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
@@ -65,7 +65,7 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 
 // Tests generates test files based on a URL using the LLM client
 // It also stores the generated test files in a temporary directory
-func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int, c *websocket.Conn, mt int) (string, []anthropic.MessageParam, error) {
+func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int, filenames []string, c *websocket.Conn, mt int) (string, []anthropic.MessageParam, error) {
 
 	logger.Debug("Starting generateTestFile")
 
@@ -114,6 +114,11 @@ Format the tests following Playwright best practices with clear test description
 
 Invalid formatting will cause errors in processing your response.
 `
+	// add existing filenames to the prompt and tell the to not use these file names
+	basePrompt += `
+EXISTING FILE NAMES (USE DIFFERENT NAME FOR THE GENERATED FILE):
+` + strings.Join(filenames, ", ")
+
 	if feedback != "" {
 		basePrompt = `An Evaluation of the test file has been provided. Please revise the test file based on the feedback. Leave everything else the same. Mainly focus on fixing the failing tests. The resulting file should be no longer than 100 lines of code.
 ` + feedback
@@ -196,7 +201,7 @@ TEST FILE CURRENT CONTENT:
 	}
 
 	fmt.Printf("[GENERATOR] GenerateTest successfully generated test file: %s\n", filePath)
-	c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Successfully generated test file: %s'", filePath)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Successfully generated test file: %s'", filepath.Base(filePath))))
 	return filePath, newMessages, nil
 }
 
@@ -206,8 +211,8 @@ func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, 
 	if err != nil {
 		return "", false, fmt.Errorf("couldn't read test file: %w", err)
 	}
-	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Try to run the test file: %s'", filename)))
-	c.WriteMessage(mt, []byte(fmt.Sprintf("RUN_TEST_TOOL 'Running test file %s...'", filename)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Try to run the test file: %s'", filepath.Base(filename))))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("RUN_TEST_TOOL 'Running test file %s...'", filepath.Base(filename))))
 
 	// Run pnpm test
 	testCmd := exec.Command("pnpm", "test", filename)
@@ -293,7 +298,7 @@ Invalid formatting will cause errors in processing your response.
 
 	fmt.Printf("[EVALUATOR] Evaluator rejected the test file ❌\n")
 	fmt.Printf("[EVALUATOR] With the following feedback:\n\n %s\n", response.Feedback)
-	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Evaluator rejected the test file ❌. With the following feedback:\n\n %s'", response.Feedback)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'REJECTED, feedback for generator:\n\n %s'", response.Feedback)))
 	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Passing the feedback to the generator.'")))
 
 	return response.Feedback, false, nil

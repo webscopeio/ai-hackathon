@@ -23,7 +23,7 @@ export function TestFiles({
         <h2 className="text-lg font-bold pb-1">Scenario {names.length + 1}:</h2>
         <p className="text-sm whitespace-pre-wrap">{scenario}</p>
       </div>
-      <div className="flex flex-col w-[500px]">
+      <div className="flex flex-col w-[700px]">
         <h2 className="text-lg font-bold pb-1">Generated test files:</h2>
         {Array.from({ length: count }).map((_, index) => {
           const fileName = names[index];
@@ -34,7 +34,7 @@ export function TestFiles({
               <div
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  isKnown
+                  index === names.length
                     ? "bg-blue-500 shadow-[0_0_12px_4px_rgba(59,130,246,0.7)]"
                     : "bg-gray-400"
                 )}

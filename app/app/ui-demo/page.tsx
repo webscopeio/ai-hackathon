@@ -19,7 +19,9 @@ export default function WebSocketDemo() {
   const [scenarioCount, setScenarioCount] = useState<number>(0);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [scenario, setScenario] = useState<string>("");
-  const [inputValue, setInputValue] = useState("jakub.kr");
+  const [inputValue, setInputValue] = useState(
+    "https://ai-hackathon-demo-delta.vercel.app/"
+  );
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
