@@ -17,7 +17,27 @@ import (
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int, filenames []string, c *websocket.Conn, mt int) (string, error) {
+// checkPause is a helper function to handle pause state
+func checkPause(pauseChan chan bool) {
+	for {
+		select {
+		case isPaused := <-pauseChan:
+			if isPaused {
+				// Wait for resume signal
+				for p := range pauseChan {
+					if !p {
+						return
+					}
+				}
+			}
+			return
+		default:
+			return
+		}
+	}
+}
+
+func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int, filenames []string, c *websocket.Conn, mt int, pauseChan chan bool) (string, error) {
 	tempDir, testsDir, err := SetupTestEnvironment(ctx)
 	if err != nil {
 		return "", fmt.Errorf("SetupTestEnvironment failed: %w", err)
@@ -30,17 +50,21 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	loopCount := 0
 
 	for {
+		checkPause(pauseChan)
+
 		if loopCount > noOfLoops {
 			return filename, nil
 		}
-		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index, filenames, c, mt)
+		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index, filenames, c, mt, pauseChan)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
 		logger.Debug("Filename: %s", filename)
 
+		checkPause(pauseChan)
+
 		var passed bool
-		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, c, mt)
+		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, c, mt, pauseChan)
 		logger.Debug("EVALUATOR feedback: %s", feedback)
 		if err != nil {
 			return "", fmt.Errorf("EvaluateTestFile failed: %w", err)
@@ -65,7 +89,8 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 
 // Tests generates test files based on a URL using the LLM client
 // It also stores the generated test files in a temporary directory
-func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int, filenames []string, c *websocket.Conn, mt int) (string, []anthropic.MessageParam, error) {
+func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int, filenames []string, c *websocket.Conn, mt int, pauseChan chan bool) (string, []anthropic.MessageParam, error) {
+	checkPause(pauseChan)
 
 	logger.Debug("Starting generateTestFile")
 
@@ -155,6 +180,8 @@ TEST FILE CURRENT CONTENT:
 	logger.Debug("Received response from LLM with length: %d characters", len(rawResponse))
 	logger.Debug("GENERATOR Response:\n %s", string(rawResponse))
 
+	checkPause(pauseChan)
+
 	newMessages := append(prevMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(string(rawResponse))))
 
 	logger.Debug("Unmarshalling LLM response")
@@ -205,7 +232,9 @@ TEST FILE CURRENT CONTENT:
 	return filePath, newMessages, nil
 }
 
-func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, c *websocket.Conn, mt int) (string, bool, error) {
+func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, c *websocket.Conn, mt int, pauseChan chan bool) (string, bool, error) {
+	checkPause(pauseChan)
+
 	// List the provided test file
 	content, err := os.ReadFile(filename)
 	if err != nil {
@@ -284,6 +313,8 @@ Invalid formatting will cause errors in processing your response.
 	if err != nil {
 		return "", false, fmt.Errorf("couldn't process request: %w", err)
 	}
+
+	checkPause(pauseChan)
 
 	var response models.EvaluationReturn
 	if err := json.Unmarshal(rawResponse, &response); err != nil {

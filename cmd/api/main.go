@@ -44,6 +44,9 @@ func runPipeline(w http.ResponseWriter, r *http.Request) {
 
 	// Channel to signal connection closure
 	done := make(chan struct{})
+	// Channel to control pause/resume
+	pauseChan := make(chan bool)
+
 	go func() {
 		defer close(done)
 		for {
@@ -55,17 +58,23 @@ func runPipeline(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Printf("recv: %s", message)
-			// Send confirmation message back to client
-			if err != nil {
-				log.Printf("error writing message: %v", err)
-				return
+
+			// Handle pause/resume commands
+			if string(message) == "PAUSE" {
+				pauseChan <- true
+				c.WriteMessage(mt, []byte("STATUS Paused"))
+				continue
+			} else if string(message) == "RESUME" {
+				pauseChan <- false
+				c.WriteMessage(mt, []byte("STATUS Resumed"))
+				continue
 			}
 
 			// Start sendMessage in a goroutine
 			wg.Add(1)
 			go func(msg []byte) {
 				defer wg.Done()
-				sendMessage(ctx, c, mt, string(msg))
+				sendMessage(ctx, c, mt, string(msg), pauseChan)
 			}(message)
 		}
 	}()
@@ -78,7 +87,7 @@ func runPipeline(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 }
 
-func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
+func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string, pauseChan chan bool) {
 	// Initialize config and LLM client
 	cfg := config.Load()
 	client := llm.New(cfg)
@@ -123,11 +132,33 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 	default:
 	}
 
+	// Function to check pause state
+	checkPause := func() {
+		for {
+			select {
+			case isPaused := <-pauseChan:
+				if isPaused {
+					// Wait for resume signal
+					for p := range pauseChan {
+						if !p {
+							return
+						}
+					}
+				}
+				return
+			default:
+				return
+			}
+		}
+	}
+
 	analysis, err := analyzer.Analyze(ctx, cfg, client, url, basePrompt, c, mt)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
 		return
 	}
+
+	checkPause()
 
 	if len(analysis.Criteria) == 0 {
 		log.Println("Error: No test criteria were generated from the analysis")
@@ -148,6 +179,8 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 		}
 	}
 
+	checkPause()
+
 	c.WriteMessage(mt, []byte(fmt.Sprintf("SCENARIOS %d", len(criteria))))
 
 	logger.Debug("CRITERIA LENGTH: %d", len(criteria))
@@ -159,6 +192,8 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 	filenames := []string{}
 
 	for i, criterion := range criteria {
+		checkPause()
+
 		// Check context before each iteration
 		select {
 		case <-ctx.Done():
@@ -178,11 +213,13 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string) {
 			TechSpec:   url,
 			ContentMap: analysis.ContentMap,
 			Criteria:   analysis.Criteria,
-		}, i+1, noOfLoops, filenames, c, mt)
+		}, i+1, noOfLoops, filenames, c, mt, pauseChan)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
 			return
 		}
+
+		checkPause()
 
 		logger.Debug("[MAIN FLOW] Writing test file: %s\n", filepath.Base(filename))
 		c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Writing test file: %s'", filepath.Base(filename))))

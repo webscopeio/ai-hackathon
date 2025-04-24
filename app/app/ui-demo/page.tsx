@@ -15,6 +15,7 @@ import { Agent } from "@/components/agent";
 import { Tool } from "@/components/tool";
 import { TestFiles } from "./test-files";
 import Feedback from "./feedback";
+
 export default function WebSocketDemo() {
   const [messages, setMessages] = useState<string[]>([]);
   const [scenarioCount, setScenarioCount] = useState<number>(0);
@@ -25,6 +26,7 @@ export default function WebSocketDemo() {
     "https://ai-hackathon-demo-delta.vercel.app/"
   );
   const [isConnected, setIsConnected] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,15 @@ export default function WebSocketDemo() {
   const handleClose = () => {
     if (!wsRef.current) return;
     wsRef.current.close();
+  };
+
+  const handlePause = () => {
+    if (!wsRef.current) return;
+    if (isPaused) {
+      wsRef.current.send("RESUME");
+    } else {
+      wsRef.current.send("PAUSE");
+    }
   };
 
   const handleSend = () => {
@@ -56,6 +67,7 @@ export default function WebSocketDemo() {
         wsRef.current.onclose = (event) => {
           console.log("WebSocket connection closed:", event.code, event.reason);
           setIsConnected(false);
+          setIsPaused(false);
           addMessage(
             `CLOSE '${event.code}${
               event.reason ? `, Reason: ${event.reason}` : ""
@@ -83,6 +95,10 @@ export default function WebSocketDemo() {
           if (id === "FEEDBACK") {
             const feedback = evt.data.substring(evt.data.indexOf(" ") + 1);
             setFeedback(feedback);
+          }
+          if (id === "STATUS") {
+            const status = evt.data.split(" ")[1];
+            setIsPaused(status === "Paused");
           }
         };
 
@@ -128,12 +144,23 @@ export default function WebSocketDemo() {
                 <Textarea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
+                  disabled={isConnected}
                   placeholder="Write a the website's URL, yeah, that's it."
                 />
                 <div className="flex flex-col gap-2">
-                  {" "}
-                  <Button onClick={handleSend} variant="secondary">
+                  <Button
+                    onClick={handleSend}
+                    disabled={isConnected}
+                    variant="default"
+                  >
                     Send
+                  </Button>
+                  <Button
+                    onClick={handlePause}
+                    disabled={!isConnected}
+                    variant={isPaused ? "default" : "secondary"}
+                  >
+                    {isPaused ? "Resume" : "Pause"}
                   </Button>
                   <Button
                     onClick={handleClose}

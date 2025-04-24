@@ -29,14 +29,14 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 		*sitemapTool,
 		*getContentTool,
 		// *sentryTool,
-		{
-			Name:        "get_significant_user_flows",
-			Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
-			InputSchema: anthropic.ToolInputSchemaParam{
-				Type:       "object",
-				Properties: map[string]string{},
-			},
-		},
+		// {
+		// 	Name:        "get_significant_user_flows",
+		// 	Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
+		// 	InputSchema: anthropic.ToolInputSchemaParam{
+		// 		Type:       "object",
+		// 		Properties: map[string]string{},
+		// 	},
+		// },
 		*finalCriteriaTool,
 	}
 
