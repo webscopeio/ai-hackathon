@@ -51,7 +51,7 @@ Sitemap: http://example.com/sitemap.xml`))
 	defer server.Close()
 
 	// Test getting the sitemap
-	sitemap, err := GetSitemap(context.Background(), server.URL)
+	sitemap, err := GetSitemap(context.Background(), server.URL, nil, 0)
 	if err != nil {
 		t.Fatalf("Failed to get sitemap: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestGetSitemapIndex(t *testing.T) {
 	})
 
 	// Test getting the sitemap from the index
-	sitemap, err := GetSitemap(context.Background(), server.URL)
+	sitemap, err := GetSitemap(context.Background(), server.URL, nil, 0)
 	if err != nil {
 		t.Fatalf("Failed to get sitemap from index: %v", err)
 	}

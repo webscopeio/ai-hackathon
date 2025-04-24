@@ -11,12 +11,33 @@ import (
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int) (string, error) {
+// checkPause is a helper function to handle pause state
+func checkPause(pauseChan chan bool) {
+	for {
+		select {
+		case isPaused := <-pauseChan:
+			if isPaused {
+				// Wait for resume signal
+				for p := range pauseChan {
+					if !p {
+						return
+					}
+				}
+			}
+			return
+		default:
+			return
+		}
+	}
+}
+
+func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, index int, noOfLoops int, filenames []string, c *websocket.Conn, mt int, pauseChan chan bool) (string, error) {
 	tempDir, testsDir, err := SetupTestEnvironment(ctx)
 	if err != nil {
 		return "", fmt.Errorf("SetupTestEnvironment failed: %w", err)
@@ -29,17 +50,21 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 	loopCount := 0
 
 	for {
+		checkPause(pauseChan)
+
 		if loopCount > noOfLoops {
 			return filename, nil
 		}
-		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index)
+		filename, generatorMessages, err = generateTestFile(ctx, client, analyzerReturn, generatorMessages, feedback, string(testFileContent), testsDir, index, filenames, c, mt, pauseChan)
 		if err != nil {
 			return "", fmt.Errorf("GenerateTestFile failed: %w", err)
 		}
 		logger.Debug("Filename: %s", filename)
 
+		checkPause(pauseChan)
+
 		var passed bool
-		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir)
+		feedback, passed, err = evaluateTestFile(ctx, client, filename, tempDir, c, mt, pauseChan)
 		logger.Debug("EVALUATOR feedback: %s", feedback)
 		if err != nil {
 			return "", fmt.Errorf("EvaluateTestFile failed: %w", err)
@@ -64,7 +89,8 @@ func GenEvalLoop(ctx context.Context, client *llm.Client, analyzerReturn *models
 
 // Tests generates test files based on a URL using the LLM client
 // It also stores the generated test files in a temporary directory
-func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int) (string, []anthropic.MessageParam, error) {
+func generateTestFile(ctx context.Context, client *llm.Client, analyzerReturn *models.AnalyzerReturn, prevMessages []anthropic.MessageParam, feedback string, testFileContent string, testsDir string, index int, filenames []string, c *websocket.Conn, mt int, pauseChan chan bool) (string, []anthropic.MessageParam, error) {
+	checkPause(pauseChan)
 
 	logger.Debug("Starting generateTestFile")
 
@@ -113,6 +139,11 @@ Format the tests following Playwright best practices with clear test description
 
 Invalid formatting will cause errors in processing your response.
 `
+	// add existing filenames to the prompt and tell the to not use these file names
+	basePrompt += `
+EXISTING FILE NAMES (USE DIFFERENT NAME FOR THE GENERATED FILE):
+` + strings.Join(filenames, ", ")
+
 	if feedback != "" {
 		basePrompt = `An Evaluation of the test file has been provided. Please revise the test file based on the feedback. Leave everything else the same. Mainly focus on fixing the failing tests. The resulting file should be no longer than 100 lines of code.
 ` + feedback
@@ -121,8 +152,10 @@ TEST FILE CURRENT CONTENT:
 
 ` + testFileContent
 		fmt.Println("\n[GENERATOR] Calling Generator with feedback.")
+		c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Calling Generator with feedback.'")))
 	} else {
 		fmt.Println("\n[GENERATOR] Calling Generator with base prompt.")
+		c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Calling Generator with base prompt.'")))
 	}
 
 	// INFO: for a structured response the client requires tools, ref: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview
@@ -146,6 +179,8 @@ TEST FILE CURRENT CONTENT:
 	}
 	logger.Debug("Received response from LLM with length: %d characters", len(rawResponse))
 	logger.Debug("GENERATOR Response:\n %s", string(rawResponse))
+
+	checkPause(pauseChan)
 
 	newMessages := append(prevMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(string(rawResponse))))
 
@@ -192,16 +227,21 @@ TEST FILE CURRENT CONTENT:
 		logger.Debug("  - %s\n", dep)
 	}
 
-	fmt.Printf("[GENERATOR] GenerateTest successfuly generated test file: %s\n", filePath)
+	fmt.Printf("[GENERATOR] GenerateTest successfully generated test file: %s\n", filePath)
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GENERATOR 'Successfully generated test file: %s'", filepath.Base(filePath))))
 	return filePath, newMessages, nil
 }
 
-func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string) (string, bool, error) {
+func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, tempDir string, c *websocket.Conn, mt int, pauseChan chan bool) (string, bool, error) {
+	checkPause(pauseChan)
+
 	// List the provided test file
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return "", false, fmt.Errorf("couldn't read test file: %w", err)
 	}
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Try to run the test file: %s'", filepath.Base(filename))))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("RUN_TEST_TOOL 'Running test file %s...'", filepath.Base(filename))))
 
 	// Run pnpm test
 	testCmd := exec.Command("pnpm", "test", filename)
@@ -212,9 +252,11 @@ func evaluateTestFile(ctx context.Context, client *llm.Client, filename string, 
 		logger.Debug("❌ Tests failed!\n")
 		logger.Debug("Error executing pnpm test: %v\n", err)
 		logger.Debug("Test output: %s\n", output)
+		c.WriteMessage(mt, []byte(fmt.Sprintf("RUN_TEST_TOOL 'Tests failed ❌. Passing the error and output to the evaluator.'")))
 		// but we don't want to return, we want to continue the loop
 	} else {
 		logger.Debug("✅ Tests passed successfully!\n")
+		c.WriteMessage(mt, []byte(fmt.Sprintf("RUN_TEST_TOOL 'Tests passed ✅. Passing the output to the evaluator.'")))
 	}
 
 	// Analyze the test output
@@ -259,6 +301,7 @@ Invalid formatting will cause errors in processing your response.
 
 	fmt.Printf("[EVALUATOR] Calling Evaluator with context length: %d characters\n", len(context))
 	fmt.Println("[EVALUATOR] and test result + file content")
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Analyzing the test contents + test results.'")))
 	rawResponse, err := client.GetStructuredCompletion(
 		ctx,
 		context,
@@ -271,6 +314,8 @@ Invalid formatting will cause errors in processing your response.
 		return "", false, fmt.Errorf("couldn't process request: %w", err)
 	}
 
+	checkPause(pauseChan)
+
 	var response models.EvaluationReturn
 	if err := json.Unmarshal(rawResponse, &response); err != nil {
 		return "", false, fmt.Errorf("couldn't unmarshal response: %w", err)
@@ -278,11 +323,15 @@ Invalid formatting will cause errors in processing your response.
 
 	if response.Passed {
 		fmt.Printf("[EVALUATOR] Evaluator accepted the test file ✅\n")
+		c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Evaluator accepted the test file ✅'")))
 		return "", true, nil
 	}
 
 	fmt.Printf("[EVALUATOR] Evaluator rejected the test file ❌\n")
 	fmt.Printf("[EVALUATOR] With the following feedback:\n\n %s\n", response.Feedback)
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'REJECTED, feedback for generator:\n\n %s'", response.Feedback)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("FEEDBACK %s", response.Feedback)))
+	c.WriteMessage(mt, []byte(fmt.Sprintf("EVALUATOR 'Passing the feedback to the generator.'")))
 
 	return response.Feedback, false, nil
 }

@@ -7,13 +7,14 @@ import (
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/config"
 	"github.com/webscopeio/ai-hackathon/internal/llm"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
-func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr string, prompt string) (*models.AnalyzerReturn, error) {
+func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr string, prompt string, c *websocket.Conn, mt int) (*models.AnalyzerReturn, error) {
 	userMessage := fmt.Sprintf("The website is: %s - %s", urlStr, prompt)
 	messages := []anthropic.MessageParam{
 		anthropic.NewUserMessage(anthropic.NewTextBlock(userMessage)),
@@ -27,15 +28,15 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
-		*sentryTool,
-		{
-			Name:        "get_significant_user_flows",
-			Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
-			InputSchema: anthropic.ToolInputSchemaParam{
-				Type:       "object",
-				Properties: map[string]string{},
-			},
-		},
+		// *sentryTool,
+		// {
+		// 	Name:        "get_significant_user_flows",
+		// 	Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
+		// 	InputSchema: anthropic.ToolInputSchemaParam{
+		// 		Type:       "object",
+		// 		Properties: map[string]string{},
+		// 	},
+		// },
 		*finalCriteriaTool,
 	}
 
@@ -47,10 +48,12 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 	var contentMap map[string]string
 
 	fmt.Println("\n[ANALYZER] User Message: \n\n", userMessage)
+	c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'Starting analyisis on %s...'", urlStr)))
+	fmt.Printf("MODEL: %s\n", client.Model)
 
 	for {
 		message, err := client.NewMessage(ctx, anthropic.MessageNewParams{
-			Model:     anthropic.ModelClaude3_5SonnetLatest,
+			Model:     client.Model,
 			MaxTokens: 2048,
 			Messages:  messages,
 			Tools:     tools,
@@ -64,9 +67,11 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 			switch block := block.AsAny().(type) {
 			case anthropic.TextBlock:
 				fmt.Printf("\n[ANALYZER] Agent response: \n\n%s\n", block.Text)
+				c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER '%s'", block.Text)))
 			case anthropic.ToolUseBlock:
 				inputJSON, _ := json.Marshal(block.Input)
 				fmt.Printf("\n[ANALYZER] Tool call: \n\n%s\n", block.Name+": "+string(inputJSON))
+				c.WriteMessage(mt, []byte(fmt.Sprintf("TOOLCALL '%s: %s'", block.Name, string(inputJSON))))
 			}
 		}
 
@@ -86,10 +91,11 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					response, err = GetSitemap(ctx, input.BaseUrl)
+					response, err = GetSitemap(ctx, input.BaseUrl, c, mt)
 					if err != nil {
 						return nil, err
 					}
+					c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'I got the sitemap'")))
 				case getContentTool.Name:
 					input := models.GetContentTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
@@ -97,12 +103,13 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 						return nil, err
 					}
 
-					result, err := GetContent(ctx, input.Urls)
+					result, err := GetContent(ctx, input.Urls, c, mt)
 					if err != nil {
 						return nil, err
 					}
 					contentMap = result.Contents
 					response = result
+					c.WriteMessage(mt, []byte(fmt.Sprintf("ANALYZER 'I got the content'")))
 				case sentryTool.Name:
 					input := models.SentryTool{}
 					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
@@ -131,7 +138,7 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					logger.Debug("FROM ANALYZE: Final contentMap: %s", input.ContentMap)
 
 					return &models.AnalyzerReturn{
-						TechSpec:   prompt,
+						TechSpec:   "",
 						ContentMap: contentMap,
 						Criteria:   input.Criteria,
 					}, nil

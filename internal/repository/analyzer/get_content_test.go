@@ -16,7 +16,7 @@ func TestGetContent(t *testing.T) {
 		"https://ai-hackathon-demo-delta.vercel.app/",
 	}
 
-	res, err := GetContent(ctx, urls)
+	res, err := GetContent(ctx, urls, nil, 0)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}

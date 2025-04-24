@@ -9,8 +9,9 @@ import (
 )
 
 func (c *Client) GetCompletion(ctx context.Context, prompt string) (string, error) {
+
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5HaikuLatest,
+		Model:     c.Model,
 		MaxTokens: 4096,
 		System: []anthropic.TextBlockParam{
 			{
@@ -67,8 +68,10 @@ func (c *Client) GetStructuredCompletion(
 
 	messages := append(prevMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)))
 
+	fmt.Printf("Calling model: %s\n", c.Model)
+
 	message, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model: anthropic.ModelClaude3_5SonnetLatest,
+		Model: c.Model,
 		// INFO: tools typically require more tokens
 		MaxTokens: 2400,
 		System:    systemBlocks,

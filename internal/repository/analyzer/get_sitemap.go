@@ -9,14 +9,16 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"github.com/webscopeio/ai-hackathon/internal/logger"
 	"github.com/webscopeio/ai-hackathon/internal/models"
 )
 
 // GetSitemap attempts to retrieve and parse a sitemap from a given URL
 // It tries common sitemap locations if not explicitly provided
-func GetSitemap(ctx context.Context, baseURL string) (*models.Sitemap, error) {
+func GetSitemap(ctx context.Context, baseURL string, c *websocket.Conn, mt int) (*models.Sitemap, error) {
 	logger.Debug("Getting sitemap for URL: %s", baseURL)
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GET_SITEMAP_TOOL 'Getting sitemap for URL: %s'", baseURL)))
 
 	// Parse the base URL
 	parsedURL, err := url.Parse(baseURL)
@@ -53,6 +55,7 @@ func GetSitemap(ctx context.Context, baseURL string) (*models.Sitemap, error) {
 		sitemap, err := fetchSitemap(ctx, sitemapURL)
 		if err == nil && sitemap != nil && len(sitemap.URLs) > 0 {
 			logger.Debug("Found sitemap at %s with %d URLs", sitemapURL, len(sitemap.URLs))
+			c.WriteMessage(mt, []byte(fmt.Sprintf("GET_SITEMAP_TOOL 'Found sitemap at %s with %d URLs'", sitemapURL, len(sitemap.URLs))))
 			return sitemap, nil
 		}
 
@@ -66,11 +69,13 @@ func GetSitemap(ctx context.Context, baseURL string) (*models.Sitemap, error) {
 			sitemap, err := fetchSitemap(ctx, firstSitemapURL)
 			if err == nil && sitemap != nil {
 				logger.Debug("Found sitemap at %s with %d URLs", firstSitemapURL, len(sitemap.URLs))
+				c.WriteMessage(mt, []byte(fmt.Sprintf("GET_SITEMAP_TOOL 'Found sitemap at %s with %d URLs'", firstSitemapURL, len(sitemap.URLs))))
 				return sitemap, nil
 			}
 		}
 	}
 
+	c.WriteMessage(mt, []byte(fmt.Sprintf("GET_SITEMAP_TOOL 'No sitemap found for %s'", baseURL)))
 	return nil, fmt.Errorf("no sitemap found for %s", baseURL)
 }
 

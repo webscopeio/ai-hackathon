@@ -1,7 +1,8 @@
 .PHONY: dev/server
 dev/server: 
 	go run github.com/goware/rerun/cmd/rerun@latest \
-		-watch . \
+		-watch cmd \
+		-watch internal \
 		-ignore app \
 		-run "go run ./cmd/api"
 
