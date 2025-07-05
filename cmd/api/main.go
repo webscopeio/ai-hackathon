@@ -94,6 +94,13 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string, pau
 
 	basePrompt := `You are a test planning expert. Your task is to analyze the provided website and generate EXACTLY 4 specific test criteria that can be used by another agent to generate E2E tests.
 
+		To provide the most comprehensive analysis, you should:
+		1. First, get the website's sitemap to understand the site structure
+		2. Get content from important pages to understand functionality
+		3. IMPORTANT: Use the get_sentry_tool to retrieve error information from Sentry. This will help you understand what issues users are experiencing and what areas need testing. Use organization slug "webscopeio-pb" and project slug "testbuddy-sentry-demo" for the Sentry tool.
+		4. Get significant user flows from Umami analytics to understand critical user paths
+		5. Based on all this information, generate test criteria
+
 		The criteria should:
 		1. Cover the core functionality of the application
 		2. Focus on different user journeys, I am interested in the content of the most valuable pages
@@ -101,6 +108,7 @@ func sendMessage(ctx context.Context, c *websocket.Conn, mt int, url string, pau
 		4. Be specific enough to be implemented as end-to-end tests
 		5. Be short, concise and easy to understand
 		6. Focus on simple tests that are easy to write (we can iterate later with more complex tests)
+		7. Consider error patterns from Sentry to include tests for problematic areas
 
 		IMPORTANT: Pass all the criteria into the get_final_criteria_tool. Format each criterion as follows:
 

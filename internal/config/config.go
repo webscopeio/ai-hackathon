@@ -14,6 +14,8 @@ type Config struct {
 	Environment     string
 	APIKey          string
 	SentryAuthToken string
+	SentryOrgSlug   string
+	SentryProjectSlug string
 	UmamiURL        string
 	UmamiAPIKey     string
 	UmamiWebsiteId  string
@@ -26,6 +28,8 @@ func Load() *Config {
 		Environment:     "development",
 		APIKey:          "",
 		SentryAuthToken: "",
+		SentryOrgSlug:   "webscopeio-pb",
+		SentryProjectSlug: "testbuddy-sentry-demo",
 		UmamiURL:        "https://api.umami.is/v1",
 		UmamiAPIKey:     "",
 		UmamiWebsiteId:  "",
@@ -71,6 +75,14 @@ func Load() *Config {
 
 	if sentryAuthToken := envMap["SENTRY_AUTH_TOKEN"]; strings.TrimSpace(sentryAuthToken) != "" {
 		cfg.SentryAuthToken = sentryAuthToken
+	}
+
+	if sentryOrgSlug := envMap["SENTRY_ORG_SLUG"]; strings.TrimSpace(sentryOrgSlug) != "" {
+		cfg.SentryOrgSlug = sentryOrgSlug
+	}
+
+	if sentryProjectSlug := envMap["SENTRY_PROJECT_SLUG"]; strings.TrimSpace(sentryProjectSlug) != "" {
+		cfg.SentryProjectSlug = sentryProjectSlug
 	}
 
 	if umamiURL := envMap["UMAMI_URL"]; strings.TrimSpace(umamiURL) != "" {

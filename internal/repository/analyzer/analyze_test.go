@@ -16,7 +16,7 @@ func TestAnalyze(t *testing.T) {
 	// cfg := config.Load()
 	// llm := llm.New(cfg)
 
-	// res, err := analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app/", "check out the website, wonder how is it structured?. i am interested in the content of the most valuable pages to create the criteria to generate an e2e tests. my orgslug := \"webscopeio-pb\" and projectslug := \"ai-hackathon-demo\" for sentry, please check the errors in the last 14 days and include them in the analysis.")
+	// res, err := analyze(ctx, cfg, llm, "https://ai-hackathon-demo-delta.vercel.app/", "check out the website, wonder how is it structured?. i am interested in the content of the most valuable pages to create the criteria to generate an e2e tests. my orgslug := \"webscopeio-pb\" and projectslug := \"testbuddy-sentry-demo\" for sentry, please check the errors in the last 14 days and include them in the analysis.")
 	// if err != nil {
 	// 	t.fatalf("analyze failed: %v", err)
 	// }

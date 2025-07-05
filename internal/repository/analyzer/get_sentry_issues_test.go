@@ -24,7 +24,7 @@ func TestGetSentryIssues(t *testing.T) {
 
 	// Replace with your actual Sentry credentials
 	orgSlug := "webscopeio-pb"
-	projectSlug := "ai-hackathon-demo"
+	projectSlug := "testbuddy-sentry-demo"
 
 	// Call the function with context and config
 	issues, err := GetSentryIssues(context.Background(), cfg, orgSlug, projectSlug)
@@ -64,7 +64,7 @@ func TestGetSentryIssuesWithTagDetails(t *testing.T) {
 
 	// Replace with your actual Sentry credentials
 	orgSlug := "webscopeio-pb"
-	projectSlug := "ai-hackathon-demo"
+	projectSlug := "testbuddy-sentry-demo"
 
 	// Tag key to retrieve details for
 	tagKey := "url"
@@ -179,7 +179,7 @@ func TestGetAffectedSentryPaths(t *testing.T) {
 
 	// Use hardcoded values for organization and project
 	orgSlug := "webscopeio-pb"
-	projectSlug := "ai-hackathon-demo"
+	projectSlug := "testbuddy-sentry-demo"
 
 	// Call the function with context and config
 	affectedPaths, err := GetAffectedSentryPaths(context.Background(), cfg, orgSlug, projectSlug)

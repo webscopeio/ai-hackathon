@@ -7,14 +7,14 @@ export async function throwServerError(response: Response): Promise<void> {
     .json()
     .catch(() => ({ error: "Unknown error" }));
   throw new Error(
-    errorData.error || `Request failed with status ${response.status}`,
+    errorData.error || `Request failed with status ${response.status}`
   );
 }
 
 export async function fetchGet<TReturn, TArgs = undefined>(
   path: string,
   args?: TArgs,
-  options?: RequestInit,
+  options?: RequestInit
 ): Promise<TReturn> {
   let url = `${API_BASE}/${path}`;
 
@@ -40,7 +40,7 @@ export async function fetchGet<TReturn, TArgs = undefined>(
 export async function fetchPost<TArgs, TReturn>(
   path: string,
   args: TArgs,
-  options?: RequestInit,
+  options?: RequestInit
 ): Promise<TReturn> {
   const response = await fetch(`${API_BASE}/${path}`, {
     method: "POST",

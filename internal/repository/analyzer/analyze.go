@@ -23,20 +23,14 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 	sitemapTool, _ := llm.GenerateTool[models.SitemapTool]("sitemap_tool", "This tool is able to get a website's sitemap using a base URL")
 	getContentTool, _ := llm.GenerateTool[models.GetContentTool]("get_content_tool", "This tool is able to get the body content for a list of important URLs")
 	sentryTool, _ := llm.GenerateTool[models.SentryTool]("get_sentry_tool", "This tool is able to get error information from Sentry for a specific project to give you a better context about the website")
+	umamiTool, _ := llm.GenerateTool[models.UmamiTool]("get_umami_tool", "This tool is able to get significant user flows from Umami analytics to understand critical user paths")
 	finalCriteriaTool, _ := llm.GenerateTool[models.FinalCriteriaTool]("get_final_criteria_tool", "This tool is able to get the final criteria for the analysis of the website from results of the other tools, run this always as the last step")
 
 	toolParams := []anthropic.ToolParam{
 		*sitemapTool,
 		*getContentTool,
-		// *sentryTool,
-		// {
-		// 	Name:        "get_significant_user_flows",
-		// 	Description: anthropic.String("This tool is very important to understand what are the most critical user flows. It will be super helpful to run it before generating a final criteria."),
-		// 	InputSchema: anthropic.ToolInputSchemaParam{
-		// 		Type:       "object",
-		// 		Properties: map[string]string{},
-		// 	},
-		// },
+		*sentryTool,
+		*umamiTool,
 		*finalCriteriaTool,
 	}
 
@@ -121,12 +115,29 @@ func Analyze(ctx context.Context, cfg *config.Config, client *llm.Client, urlStr
 					if err != nil {
 						return nil, fmt.Errorf("failed to get Sentry issues: %w", err)
 					}
-				case "get_significant_user_flows":
-					// We analyze the significant user flows based on fixed criteria
-					response, err = GetSignificantUserFlows(ctx, cfg, 7, 2, 2)
+				case umamiTool.Name:
+					input := models.UmamiTool{}
+					err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input)
+					if err != nil {
+						return nil, err
+					}
+
+					// Use default values if not provided
+					if input.DaysBack == 0 {
+						input.DaysBack = 7
+					}
+					if input.MinPathLength == 0 {
+						input.MinPathLength = 2
+					}
+					if input.MinFrequency == 0 {
+						input.MinFrequency = 2
+					}
+
+					response, err = GetSignificantUserFlows(ctx, cfg, input.DaysBack, input.MinPathLength, input.MinFrequency)
 					if err != nil {
 						return nil, fmt.Errorf("failed to get significant user flows: %w", err)
 					}
+					c.WriteMessage(mt, []byte(fmt.Sprintf("GET_UMAMI_TOOL 'Analyzed user flows for the last %d days'", input.DaysBack)))
 				case finalCriteriaTool.Name:
 					logger.Debug("FROM ANALYZE: Final criteria tool raw: %s", variant.JSON.Input.Raw())
 					input := models.FinalCriteriaTool{}

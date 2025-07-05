@@ -327,3 +327,9 @@ type UmamiSignificantFlow struct {
 	Frequency  int      `json:"frequency"`
 	Percentage float64  `json:"percentage"`
 }
+
+type UmamiTool struct {
+    DaysBack      int `json:"daysBack" jsonschema_description:"Number of days back to analyze user flows"`
+    MinPathLength int `json:"minPathLength" jsonschema_description:"Minimum path length to consider significant"`
+    MinFrequency  int `json:"minFrequency" jsonschema_description:"Minimum frequency to consider significant"`
+}
